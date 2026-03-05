@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Generador de Reportes por competencias</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.16.9/xlsx.full.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <div class="container">
+        <h1>Generador de reportes por competencias v2.3</h1>
+
+        <!-- SECCIÓN 1: CARGA DE ARCHIVOS Y CONFIGURACIÓN (3 COLUMNAS) -->
+        <div class="three-columns">
+            <!-- COLUMNA 1: ARCHIVO DE ESTUDIANTES -->
+            <div class="column-third">
+                <h3>📁 Archivo de Estudiantes</h3>
+                <input type="file" id="excel-file" accept=".xlsx, .xls">
+                <button id="btn-procesar-archivo">Procesar Archivo</button>
+
+                <div id="progress-bar-container" class="hidden">
+                    <div id="progress-bar"></div>
+                </div>
+
+                <label for="seleccion-hoja">Seleccionar Hoja:</label>
+                <select id="seleccion-hoja">
+                    <option value="">Seleccione una hoja</option>
+                </select>
+
+                <div id="student-list-container">
+                    <h4>Lista de Estudiantes</h4>
+                    <div id="student-list"></div>
+                </div>
+            </div>
+
+            <!-- COLUMNA 2: ARCHIVO DE COMPETENCIAS -->
+            <div class="column-third">
+                <h3>📚 Archivo de Competencias</h3>
+                <p style="font-size: 12px; color: #666; margin: 5px 0;">(Opcional - para seleccionar competencias)</p>
+
+                <input type="file" id="competencias-file" accept=".xlsx, .xls">
+                <button id="btn-cargar-competencias">Cargar Competencias</button>
+
+                <label for="seleccion-hoja-competencias">Seleccionar Hoja:</label>
+                <select id="seleccion-hoja-competencias">
+                    <option value="">Primero cargue el archivo</option>
+                </select>
+
+                <div id="competencias-status" style="margin-top: 10px; font-size: 12px; color: #666;"></div>
+            </div>
+
+            <!-- COLUMNA 3: CONFIGURACIÓN DE EVALUACIONES -->
+            <div class="column-third">
+                <h3>⚙️ Configuración de Evaluaciones</h3>
+
+                <label for="num-parciales">Número de Parciales:</label>
+                <input type="number" id="num-parciales" min="1" max="4" value="1">
+
+                <label for="num-quices">Número de Quices:</label>
+                <input type="number" id="num-quices" min="1" max="5" value="1">
+
+                <button id="btn-actualizar-evaluaciones" style="margin-top: 10px; width: 100%;">Actualizar Tabla</button>
+
+                <div style="margin-top: 15px; padding: 10px; background-color: #f0f8ff; border-radius: 5px; font-size: 12px;">
+                    <strong>💡 Nota:</strong> Después de cambiar los valores, haga clic en "Actualizar Tabla" para regenerar la tabla de competencias.
+                </div>
+            </div>
+        </div>
+
+        <!-- SECCIÓN 2: TABLA DE COMPETENCIAS -->
+        <div class="full-width-section">
+            <h3>📋 Tabla de Competencias y Porcentajes</h3>
+            <div id="seleccion-competencias"></div>
+        </div>
+
+        <!-- SECCIÓN 3: CRITERIOS DE SELECCIÓN MÚLTIPLES -->
+        <div class="full-width-section">
+            <h3>🎯 Criterios de Filtrado por Nota (Múltiples Criterios)</h3>
+            <div class="filter-criteria">
+                <!-- Operador Lógico Global -->
+                <div class="filter-operator">
+                    <label for="operador-logico">Operador Lógico entre Criterios:</label>
+                    <select id="operador-logico">
+                        <option value="AND" selected>Y (AND) - Deben cumplirse TODOS los criterios</option>
+                        <option value="OR">O (OR) - Debe cumplirse AL MENOS UN criterio</option>
+                    </select>
+                </div>
+
+                <!-- Contenedor de Criterios -->
+                <div id="criterios-container">
+                    <!-- Criterio 1 (por defecto) -->
+                    <div class="criterio-row" data-criterio-id="1">
+                        <div class="criterio-number">Criterio 1</div>
+                        <div class="criterio-controls">
+                            <div class="filter-item">
+                                <label>Evaluación:</label>
+                                <select class="criterio-evaluacion">
+                                    <option value="">Seleccione evaluación</option>
+                                </select>
+                            </div>
+
+                            <div class="filter-item">
+                                <label>Comparación:</label>
+                                <select class="criterio-comparacion">
+                                    <option value="lt">Menor que (&lt;)</option>
+                                    <option value="lte">Menor o igual (≤)</option>
+                                    <option value="gt">Mayor que (&gt;)</option>
+                                    <option value="gte">Mayor o igual (≥)</option>
+                                    <option value="eq">Igual que (=)</option>
+                                </select>
+                            </div>
+
+                            <div class="filter-item">
+                                <label>Valor de Nota:</label>
+                                <input type="number" class="criterio-valor" min="0" max="5" step="0.1" placeholder="0.0 - 5.0">
+                            </div>
+
+                            <div class="filter-item">
+                                <button class="btn-remove-criterio" onclick="return false;" title="Eliminar este criterio">❌</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Botón Agregar Criterio -->
+                <div class="filter-add">
+                    <button id="btn-agregar-criterio" class="btn-add">➕ Agregar Otro Criterio</button>
+                    <button id="btn-limpiar-criterios" class="btn-small">🗑️ Limpiar Todos</button>
+                </div>
+
+                <!-- Opciones Adicionales -->
+                <div class="filter-row">
+                    <div class="filter-checkbox">
+                        <input type="checkbox" id="incluir-nombres" checked>
+                        <label for="incluir-nombres">Incluir Competencias y Recomendaciones en el Informe</label>
+                    </div>
+                </div>
+
+                <!-- Resumen de Criterios -->
+                <div id="criterios-resumen" class="criterios-resumen">
+                    <strong>📝 Resumen:</strong> <span id="criterios-resumen-texto">Agregue al menos un criterio para filtrar</span>
+                </div>
+
+                <!-- Botón Filtrar -->
+                <div class="filter-buttons">
+                    <button id="btn-generar-reporte-evaluacion" class="btn-primary">🔍 Filtrar Estudiantes por Criterios</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- SECCIÓN 4: ESTUDIANTES FILTRADOS -->
+        <div id="filtered-student-list-container" class="full-width-section hidden">
+            <h3>👥 Estudiantes que cumplen el criterio <span id="contador-filtrados" style="color: #007BFF;"></span></h3>
+            <div style="margin-bottom: 10px;">
+                <button id="btn-seleccionar-todos-filtrados" class="btn-small">Seleccionar Todos</button>
+                <button id="btn-deseleccionar-todos-filtrados" class="btn-small">Deseleccionar Todos</button>
+            </div>
+            <div id="filtered-student-list" class="student-checkboxes"></div>
+            <button id="btn-generar-reporte-seleccionados" class="btn-success">📄 Generar Reporte para Seleccionados</button>
+        </div>
+
+        <!-- SECCIÓN 5: GENERACIÓN DE REPORTE GENERAL -->
+        <div class="full-width-section">
+            <h3>📊 Reporte General por Estudiante</h3>
+            <p style="font-size: 12px; color: #666;">Genere un reporte completo de todas las evaluaciones para uno o varios estudiantes.</p>
+
+            <label for="seleccion-estudiante">Seleccionar Estudiantes:</label>
+            <select id="seleccion-estudiante" multiple size="5">
+            </select>
+
+            <div style="margin: 10px 0;">
+                <button id="btn-seleccionar-todos" class="btn-small">Seleccionar Todos</button>
+                <button id="btn-deseleccionar-todos" class="btn-small">Deseleccionar Todos</button>
+            </div>
+
+            <button id="btn-generar-reporte-estudiante" class="btn-success">📄 Generar Reporte General de Notas</button>
+        </div>
+
+        <!-- MODAL POPUP PARA SELECCIÓN DE COMPETENCIAS -->
+        <div id="excel-popup" class="excel-popup">
+            <h3>Seleccione las competencias y sugerencias</h3>
+            <div id="excel-content"></div>
+            <button id="btn-aplicar-seleccion">Aplicar Selección</button>
+            <button id="btn-cerrar-popup">Cerrar</button>
+        </div>
+
+        <!-- SECCIÓN 6: VISTA PREVIA Y DESCARGA -->
+        <div id="vista-previa-section" class="full-width-section hidden">
+            <h3>👁️ Vista Previa del Reporte</h3>
+            <div id="vista-previa-contenido" class="preview-content"></div>
+
+            <div class="pdf-options">
+                <div class="pdf-option">
+                    <label for="tamano-hoja">Tamaño de Hoja:</label>
+                    <select id="tamano-hoja">
+                        <option value="letter">Carta</option>
+                        <option value="legal">Oficio</option>
+                    </select>
+                </div>
+
+                <div class="pdf-option">
+                    <label for="orientacion">Orientación:</label>
+                    <select id="orientacion">
+                        <option value="p">Vertical</option>
+                        <option value="l">Horizontal</option>
+                    </select>
+                </div>
+
+                <button id="btn-descargar-pdf" class="btn-download">⬇️ Descargar Informe en PDF</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="js/main.js?v=2.3"></script>
+</body>
+</html>

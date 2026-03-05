@@ -1,0 +1,447 @@
+
+    let workbook = null;
+    let evaluacionActual = '';
+    let competenciasSeleccionadas = {};
+    let estudiantesData = [];
+
+    function actualizarEvaluaciones() {
+        console.log('actualizarEvaluaciones function called');
+        const numParciales = document.getElementById('num-parciales').value;
+        const numQuices = document.getElementById('num-quices').value;
+        console.log('numParciales:', numParciales);
+        console.log('numQuices:', numQuices);
+        const seleccionDiv = document.getElementById('seleccion-competencias');
+        const seleccionEvaluacion = document.getElementById('seleccion-evaluacion');
+        const seleccionEstudiante = document.getElementById('seleccion-estudiante');
+        
+        seleccionDiv.innerHTML = '';
+        seleccionEvaluacion.innerHTML = '<option value="">Seleccione una evaluación</option>';
+
+        let tableHTML = '<table><thead><tr><th>Evaluación</th><th>Competencias</th><th>Páginas Web</th><th>Videos</th><th>Ejercicios</th><th>Herramientas</th><th>Porcentaje (%)</th></tr></thead><tbody>';
+        
+        for (let i = 1; i <= numParciales; i++) {
+            const parcialName = `${i}P`;
+            tableHTML += `<tr>
+                <td>${parcialName}</td>
+                <td><button onclick="seleccionarCompetencias('${parcialName}')">Seleccionar Competencias</button></td>
+                <td><button onclick="seleccionarCompetencias('${parcialName}Web')">Seleccionar Páginas Web</button></td>
+                <td><button onclick="seleccionarCompetencias('${parcialName}Video')">Seleccionar Videos</button></td>
+                <td><button onclick="seleccionarCompetencias('${parcialName}Ejercicios')">Seleccionar Ejercicios</button></td>
+                <td><button onclick="seleccionarCompetencias('${parcialName}Herramientas')">Seleccionar Herramientas</button></td>
+                <td><input type="number" id="${parcialName}Porcentaje" min="0" max="100" value="20"></td>
+            </tr>`;
+            seleccionEvaluacion.innerHTML += `<option value="${parcialName}">${parcialName}</option>`;
+        }
+        
+        for (let i = 1; i <= numQuices; i++) {
+            const quizId = `Q${i}`;
+            tableHTML += `<tr>
+                <td>${quizId}</td>
+                <td><button onclick="seleccionarCompetencias('${quizId}')">Seleccionar Competencias</button></td>
+                <td><button onclick="seleccionarCompetencias('${quizId}Web')">Seleccionar Páginas Web</button></td>
+                <td><button onclick="seleccionarCompetencias('${quizId}Video')">Seleccionar Videos</button></td>
+                <td><button onclick="seleccionarCompetencias('${quizId}Ejercicios')">Seleccionar Ejercicios</button></td>
+                <td><button onclick="seleccionarCompetencias('${quizId}Herramientas')">Seleccionar Herramientas</button></td>
+                <td><input type="number" id="${quizId}Porcentaje" min="0" max="100" value="5"></td>
+            </tr>`;
+            seleccionEvaluacion.innerHTML += `<option value="${quizId}">${quizId}</option>`;
+        }
+
+        tableHTML += '</tbody></table>';
+        seleccionDiv.innerHTML = tableHTML;
+    }
+
+    function seleccionarCompetencias(tipo) {
+        if (!workbook) {
+            alert('Por favor, cargue un archivo Excel primero');
+            return;
+        }
+        evaluacionActual = tipo;
+        const sheetName = document.getElementById('seleccion-hoja').value;
+        if (!sheetName) {
+            alert('Por favor, seleccione una hoja de Excel');
+            return;
+        }
+        const worksheet = workbook.Sheets[sheetName];
+        const jsonData = XLSX.utils.sheet_to_json(worksheet, {header: 1});
+        estudiantesData = jsonData;
+        mostrarContenidoExcel(jsonData);
+    }
+
+    function cargarArchivoExcel() {
+        console.log('cargarArchivoExcel called');
+        const fileInput = document.getElementById('excel-file');
+        const file = fileInput.files[0];
+        if (file) {
+            console.log('File selected:', file.name);
+            const progressBarContainer = document.getElementById('progress-bar-container');
+            const progressBar = document.getElementById('progress-bar');
+            progressBarContainer.classList.remove('hidden');
+            const reader = new FileReader();
+            let progress = 0;
+            const interval = setInterval(() => {
+                progress += 10;
+                progressBar.style.width = progress + '%';
+                progressBar.textContent = progress + '%';
+                if (progress >= 100) {
+                    clearInterval(interval);
+                }
+            }, 100);
+
+            reader.onload = function(e) {
+                console.log('File loaded');
+                clearInterval(interval);
+                progressBar.style.width = '100%';
+                progressBar.textContent = '100%';
+                try {
+                    const data = new Uint8Array(e.target.result);
+                    workbook = XLSX.read(data, {type: 'array'});
+                    console.log('Workbook created:', workbook);
+                    actualizarSeleccionHoja();
+                } catch (error) {
+                    console.error('Error processing Excel file:', error);
+                }
+                setTimeout(() => {
+                    progressBarContainer.classList.add('hidden');
+                }, 500);
+            };
+            reader.readAsArrayBuffer(file);
+        }
+    }
+
+    function actualizarSeleccionHoja() {
+        console.log('actualizarSeleccionHoja called');
+        const seleccionHoja = document.getElementById('seleccion-hoja');
+        seleccionHoja.innerHTML = '<option value="">Seleccione una hoja</option>';
+        if (workbook && workbook.SheetNames) {
+            console.log('Sheet names:', workbook.SheetNames);
+            workbook.SheetNames.forEach(sheetName => {
+                seleccionHoja.innerHTML += `<option value="${sheetName}">${sheetName}</option>`;
+            });
+        }
+    }
+
+    function mostrarListaEstudiantes() {
+        console.log('mostrarListaEstudiantes called');
+        const sheetName = document.getElementById('seleccion-hoja').value;
+        console.log('Selected sheet:', sheetName);
+        if (!sheetName) {
+            document.getElementById('student-list').innerHTML = '';
+            return;
+        }
+        try {
+            const worksheet = workbook.Sheets[sheetName];
+            const jsonData = XLSX.utils.sheet_to_json(worksheet, {header: 1});
+            estudiantesData = jsonData;
+            console.log('Sheet data:', jsonData);
+            const studentList = document.getElementById('student-list');
+            studentList.innerHTML = '';
+            const headers = jsonData[0];
+            const studentNameColumnIndex = headers.findIndex(header => header === 'Nombres y Apellidos');
+            if (studentNameColumnIndex === -1) {
+                studentList.innerHTML = '<p>La columna "Nombres y Apellidos" no fue encontrada.</p>';
+                return;
+            }
+            const ul = document.createElement('ul');
+            jsonData.slice(1).forEach(row => {
+                const li = document.createElement('li');
+                li.textContent = row[studentNameColumnIndex];
+                ul.appendChild(li);
+            });
+            studentList.appendChild(ul);
+            actualizarSeleccionEstudiante(jsonData);
+        } catch (error) {
+            console.error('Error displaying student list:', error);
+        }
+    }
+
+
+
+    function actualizarSeleccionEstudiante(data) {
+        const seleccionEstudiante = document.getElementById('seleccion-estudiante');
+        seleccionEstudiante.innerHTML = '';
+        data.slice(1).forEach(row => {
+            if (row.length > 1) {
+                seleccionEstudiante.innerHTML += `<option value="${row[0]}">${row[1]}</option>`;
+            }
+        });
+    }
+
+    function mostrarContenidoExcel(data) {
+        const excelContent = document.getElementById('excel-content');
+        excelContent.innerHTML = '';
+        const table = document.createElement('table');
+        data.forEach((row, rowIndex) => {
+            const tr = document.createElement('tr');
+            row.forEach((cell, cellIndex) => {
+                const td = document.createElement('td');
+                td.className = 'excel-cell';
+                td.textContent = cell;
+                td.onclick = () => toggleSeleccionCelda(td);
+                td.dataset.row = rowIndex;
+                td.dataset.cell = cellIndex;
+                tr.appendChild(td);
+            });
+            table.appendChild(tr);
+        });
+        excelContent.appendChild(table);
+        document.getElementById('excel-popup').style.display = 'block';
+    }
+
+    function toggleSeleccionCelda(cell) {
+        cell.classList.toggle('selected');
+    }
+
+    function aplicarSeleccion() {
+        const selectedCells = document.querySelectorAll('#excel-content .selected');
+        const competencias = Array.from(selectedCells).map(cell => cell.textContent);
+        competenciasSeleccionadas[evaluacionActual] = competencias;
+        actualizarBotonesCompetencias(evaluacionActual, competencias);
+        cerrarPopupExcel();
+    }
+
+    function cerrarPopupExcel() {
+        document.getElementById('excel-popup').style.display = 'none';
+    }
+
+    function actualizarBotonesCompetencias(tipo, competencias) {
+        const boton = document.querySelector(`button[onclick="seleccionarCompetencias('${tipo}')"]`);
+        if (boton) {
+            boton.textContent = `${tipo} (${competencias.length})`;
+            boton.title = competencias.join(', ');
+        }
+    }
+
+    function generarReportePorEvaluacion() {
+        console.log('generarReportePorEvaluacion called');
+        console.log('estudiantesData:', estudiantesData);
+        const evaluacion = document.getElementById('seleccion-evaluacion').value;
+        const tipoComparacion = document.getElementById('tipo-comparacion').value;
+        const valorNota = parseFloat(document.getElementById('valor-nota').value);
+
+        if (!evaluacion || !tipoComparacion || isNaN(valorNota)) {
+            alert('Por favor, complete todos los criterios de evaluación.');
+            return;
+        }
+
+        const filteredStudents = estudiantesData.filter((row, index) => {
+            if (index === 0) return false; // Ignorar encabezado
+            let notaAcumulada = 0;
+            evaluacion.split('+').forEach(ev => {
+                const porcentaje = parseFloat(document.getElementById(`${ev}Porcentaje`).value) / 100;
+                const nota = parseFloat(row[2]) || 0; // Supongamos que la nota está en la columna 3
+                notaAcumulada += (nota * porcentaje);
+            });
+            return (tipoComparacion === 'lt' && notaAcumulada < valorNota) ||
+                   (tipoComparacion === 'lte' && notaAcumulada <= valorNota) ||
+                   (tipoComparacion === 'gt' && notaAcumulada > valorNota) ||
+                   (tipoComparacion === 'gte' && notaAcumulada >= valorNota) ||
+                   (tipoComparacion === 'eq' && notaAcumulada === valorNota);
+        });
+
+        console.log('filteredStudents:', filteredStudents);
+
+        const filteredStudentList = document.getElementById('filtered-student-list');
+        filteredStudentList.innerHTML = '';
+        filteredStudents.forEach(student => {
+            const checkbox = document.createElement('input');
+            checkbox.type = 'checkbox';
+            checkbox.value = student[0];
+            checkbox.id = `student-${student[0]}`;
+            const label = document.createElement('label');
+            label.htmlFor = `student-${student[0]}`;
+            label.textContent = student[1];
+            const br = document.createElement('br');
+            filteredStudentList.appendChild(checkbox);
+            filteredStudentList.appendChild(label);
+            filteredStudentList.appendChild(br);
+        });
+
+        document.getElementById('filtered-student-list-container').classList.remove('hidden');
+    }
+
+    function generarReporteParaSeleccionados() {
+        const filteredStudentList = document.getElementById('filtered-student-list');
+        const selectedStudents = [...filteredStudentList.querySelectorAll('input[type="checkbox"]:checked')].map(checkbox => checkbox.value);
+
+        if (selectedStudents.length === 0) {
+            alert('Por favor, seleccione al menos un estudiante.');
+            return;
+        }
+
+        const incluirCompetencias = document.getElementById('incluir-nombres').checked;
+
+        let contenidoReporte = '';
+
+        selectedStudents.forEach(estudianteId => {
+            const estudiante = estudiantesData.find(row => row[0] == estudianteId);
+            if (!estudiante) {
+                return;
+            }
+
+            contenidoReporte += `
+                <h4>Informe de ${estudiante[1]}</h4>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Evaluación</th>
+                            <th>Nota</th>
+            `;
+            if (incluirCompetencias) {
+                contenidoReporte += `
+                            <th>Competencias a Reforzar</th>
+                            <th>Páginas Web Recomendadas</th>
+                            <th>Videos Recomendados</th>
+                            <th>Páginas y Números de Ejercicios Recomendados</th>
+                            <th>Herramientas Virtuales Recomendadas</th>
+                `;
+            }
+            contenidoReporte += `
+                        </tr>
+                    </thead>
+                    <tbody>
+            `;
+
+            let notaAcumulada = 0;
+            const evaluacion = document.getElementById('seleccion-evaluacion').value;
+            evaluacion.split('+').forEach(ev => {
+                const porcentaje = parseFloat(document.getElementById(`${ev}Porcentaje`).value) / 100;
+                const nota = parseFloat(estudiante[2]) || 0; // Supongamos que la nota está en la columna 3
+                notaAcumulada += (nota * porcentaje);
+                contenidoReporte += `
+                    <tr>
+                        <td>${ev}</td>
+                        <td>${nota}</td>
+                `;
+                if (incluirCompetencias) {
+                    contenidoReporte += `
+                        <td>${competenciasSeleccionadas[ev] ? competenciasSeleccionadas[ev].join(', ') : 'Ninguna seleccionada'}</td>
+                        <td>${competenciasSeleccionadas[ev + 'Web'] ? competenciasSeleccionadas[ev + 'Web'].join(', ') : 'Ninguna seleccionada'}</td>
+                        <td>${competenciasSeleccionadas[ev + 'Video'] ? competenciasSeleccionadas[ev + 'Video'].join(', ') : 'Ninguna seleccionada'}</td>
+                        <td>${competenciasSeleccionadas[ev + 'Ejercicios'] ? competenciasSeleccionadas[ev + 'Ejercicios'].join(', ') : 'Ninguna seleccionada'}</td>
+                        <td>${competenciasSeleccionadas[ev + 'Herramientas'] ? competenciasSeleccionadas[ev + 'Herramientas'].join(', ') : 'Ninguna seleccionada'}</td>
+                    `;
+                }
+                contenidoReporte += `
+                    </tr>
+                `;
+            });
+
+            contenidoReporte += `
+                    </tbody>
+                </table>
+                <p>Nota Acumulada: ${notaAcumulada.toFixed(2)}</p>
+                <hr>
+            `;
+        });
+
+        mostrarVistaPrevia(contenidoReporte);
+    }
+
+    function selectAllStudents() {
+        const select = document.getElementById('seleccion-estudiante');
+        for (let i = 0; i < select.options.length; i++) {
+            select.options[i].selected = true;
+        }
+    }
+
+    function deselectAllStudents() {
+        const select = document.getElementById('seleccion-estudiante');
+        for (let i = 0; i < select.options.length; i++) {
+            select.options[i].selected = false;
+        }
+    }
+
+    function generarReportePorEstudiante() {
+        const select = document.getElementById('seleccion-estudiante');
+        const selectedStudents = [...select.options].filter(option => option.selected).map(option => option.value);
+
+        if (selectedStudents.length === 0) {
+            alert('Por favor, seleccione al menos un estudiante.');
+            return;
+        }
+
+        let contenidoReporte = '';
+
+        selectedStudents.forEach(estudianteId => {
+            const estudiante = estudiantesData.find(row => row[0] == estudianteId);
+            if (!estudiante) {
+                return;
+            }
+
+            contenidoReporte += `
+                <h4>Informe General de Notas del Estudiante: ${estudiante[1]}</h4>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Evaluación</th>
+                            <th>Fecha de Evaluación</th>
+                            <th>Nota</th>
+                            <th>Competencias</th>
+                            <th>Acumulado (%)</th>
+                            <th>Observación</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+            `;
+
+            let totalAcumulado = 0;
+            for (let i = 1; i <= 4; i++) {
+                const parcialName = `${i}P`;
+                const nota = parseFloat(estudiante[2 + i]) || 0;
+                const porcentaje = parseFloat(document.getElementById(`${parcialName}Porcentaje`).value) / 100;
+                const acumulado = (nota * porcentaje).toFixed(2);
+                totalAcumulado += parseFloat(acumulado);
+                contenidoReporte += `
+                    <tr>
+                        <td>${parcialName}</td>
+                        <td>Fecha ${parcialName}</td>
+                        <td>${nota}</td>
+                        <td>${competenciasSeleccionadas[parcialName] ? competenciasSeleccionadas[parcialName].join(', ') : 'Ninguna seleccionada'}</td>
+                        <td>${acumulado}</td>
+                        <td>${acumulado >= 0.6 ? '<span style="color: blue;">Aprobado</span>' : '<span style="color: red;">No Aprobado</span>'}</td>
+                    </tr>
+                `;
+            }
+            contenidoReporte += `
+                    </tbody>
+                </table>
+                <p>Total Acumulado: ${totalAcumulado.toFixed(2)}</p>
+                <hr>
+            `;
+        });
+
+        mostrarVistaPrevia(contenidoReporte);
+    }
+
+    function mostrarVistaPrevia(contenido) {
+        document.getElementById('vista-previa-contenido').innerHTML = contenido;
+        document.getElementById('vista-previa-section').classList.remove('hidden');
+    }
+
+    function descargarPDF() {
+        const { jsPDF } = window.jspdf;
+        const doc = new jsPDF({
+            orientation: document.getElementById('orientacion').value,
+            unit: 'pt',
+            format: document.getElementById('tamano-hoja').value
+        });
+
+        const vistaPrevia = document.getElementById('vista-previa-contenido');
+        doc.html(vistaPrevia, {
+            callback: function (doc) {
+                doc.save('reporte_competencias.pdf');
+            },
+            x: 10,
+            y: 10,
+            html2canvas: {
+                scale: 0.5
+            }
+        });
+    }
+
+    document.addEventListener('DOMContentLoaded', function() {
+        actualizarEvaluaciones(); // Inicializar la tabla de competencias
+        document.getElementById('seleccion-hoja').addEventListener('change', mostrarListaEstudiantes);
+        document.getElementById('excel-file').addEventListener('change', cargarArchivoExcel);
+    });
