@@ -3,217 +3,505 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Generador de Reportes por competencias</title>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.16.9/xlsx.full.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <title>Analista Académico</title>
+    <meta name="description" content="Análisis de notas por competencias (analíticas, prácticas y de pensamiento crítico) de uno o varios grupos, con informes individuales, grupales y del programa">
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
     <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
-    <div class="container">
-        <h1>Generador de reportes por competencias v2.3</h1>
+    <a href="#contenido" class="skip-link">Saltar al contenido</a>
 
-        <!-- SECCIÓN 1: CARGA DE ARCHIVOS Y CONFIGURACIÓN (3 COLUMNAS) -->
-        <div class="three-columns">
-            <!-- COLUMNA 1: ARCHIVO DE ESTUDIANTES -->
-            <div class="column-third">
-                <h3>📁 Archivo de Estudiantes</h3>
-                <input type="file" id="excel-file" accept=".xlsx, .xls">
-                <button id="btn-procesar-archivo">Procesar Archivo</button>
-
-                <div id="progress-bar-container" class="hidden">
-                    <div id="progress-bar"></div>
-                </div>
-
-                <label for="seleccion-hoja">Seleccionar Hoja:</label>
-                <select id="seleccion-hoja">
-                    <option value="">Seleccione una hoja</option>
-                </select>
-
-                <div id="student-list-container">
-                    <h4>Lista de Estudiantes</h4>
-                    <div id="student-list"></div>
-                </div>
+    <header class="app-header no-print">
+        <div class="container mx-auto px-4 py-4 flex flex-wrap items-center justify-between gap-3">
+            <div>
+                <h1 class="text-2xl font-bold text-white">Analista Académico</h1>
+                <p class="text-indigo-100 text-sm" id="subtituloCurso">Análisis de notas por competencias e informes</p>
             </div>
-
-            <!-- COLUMNA 2: ARCHIVO DE COMPETENCIAS -->
-            <div class="column-third">
-                <h3>📚 Archivo de Competencias</h3>
-                <p style="font-size: 12px; color: #666; margin: 5px 0;">(Opcional - para seleccionar competencias)</p>
-
-                <input type="file" id="competencias-file" accept=".xlsx, .xls">
-                <button id="btn-cargar-competencias">Cargar Competencias</button>
-
-                <label for="seleccion-hoja-competencias">Seleccionar Hoja:</label>
-                <select id="seleccion-hoja-competencias">
-                    <option value="">Primero cargue el archivo</option>
-                </select>
-
-                <div id="competencias-status" style="margin-top: 10px; font-size: 12px; color: #666;"></div>
+            <div class="selector-grupo" id="selectorGrupoWrap">
+                <label for="selectorGrupo" class="text-indigo-100 text-xs font-semibold">Grupo activo <span id="numGrupos" class="tab-badge"></span></label>
+                <select id="selectorGrupo" class="form-input" aria-label="Grupo activo"></select>
             </div>
-
-            <!-- COLUMNA 3: CONFIGURACIÓN DE EVALUACIONES -->
-            <div class="column-third">
-                <h3>⚙️ Configuración de Evaluaciones</h3>
-
-                <label for="num-parciales">Número de Parciales:</label>
-                <input type="number" id="num-parciales" min="1" max="4" value="1">
-
-                <label for="num-quices">Número de Quices:</label>
-                <input type="number" id="num-quices" min="1" max="5" value="1">
-
-                <button id="btn-actualizar-evaluaciones" style="margin-top: 10px; width: 100%;">Actualizar Tabla</button>
-
-                <div style="margin-top: 15px; padding: 10px; background-color: #f0f8ff; border-radius: 5px; font-size: 12px;">
-                    <strong>💡 Nota:</strong> Después de cambiar los valores, haga clic en "Actualizar Tabla" para regenerar la tabla de competencias.
-                </div>
+            <div class="flex flex-wrap gap-2">
+                <button type="button" class="btn btn-header" id="guardarRespaldoBtn" title="Descargar todo el trabajo como archivo .json">Guardar respaldo</button>
+                <label class="btn btn-header cursor-pointer" title="Abrir un respaldo .json guardado antes">Abrir respaldo
+                    <input type="file" id="abrirRespaldoInput" accept=".json,application/json" class="sr-only">
+                </label>
+                <button type="button" class="btn btn-header" id="nuevoBtn" title="Borrar todos los datos y empezar de cero">Nuevo</button>
+                <button type="button" class="btn btn-header-solid" id="ayudaBtn" title="Abrir el manual del usuario en la sección de esta pestaña">? Ayuda</button>
             </div>
         </div>
+        <nav class="container mx-auto px-4 pb-0 overflow-x-auto" aria-label="Secciones">
+            <div class="flex" role="tablist">
+                <button type="button" class="tab-link active" data-tab="datos" role="tab">1. Datos</button>
+                <button type="button" class="tab-link" data-tab="evaluaciones" role="tab">2. Evaluaciones y competencias <span class="tab-badge" id="badgeEvaluaciones">0</span></button>
+                <button type="button" class="tab-link" data-tab="analisis" role="tab">3. Análisis del grupo</button>
+                <button type="button" class="tab-link" data-tab="estudiantes" role="tab">4. Estudiantes <span class="tab-badge" id="badgeEstudiantes">0</span></button>
+                <button type="button" class="tab-link" data-tab="informes" role="tab">5. Informes</button>
+                <button type="button" class="tab-link" data-tab="programa" role="tab">6. Programa (todos los grupos) <span class="tab-badge" id="badgeGrupos">0</span></button>
+                <button type="button" class="tab-link" data-tab="manual" role="tab">7. Manual del usuario</button>
+            </div>
+        </nav>
+    </header>
 
-        <!-- SECCIÓN 2: TABLA DE COMPETENCIAS -->
-        <div class="full-width-section">
-            <h3>📋 Tabla de Competencias y Porcentajes</h3>
-            <div id="seleccion-competencias"></div>
-        </div>
+    <main id="contenido" class="container mx-auto px-4 py-6">
 
-        <!-- SECCIÓN 3: CRITERIOS DE SELECCIÓN MÚLTIPLES -->
-        <div class="full-width-section">
-            <h3>🎯 Criterios de Filtrado por Nota (Múltiples Criterios)</h3>
-            <div class="filter-criteria">
-                <!-- Operador Lógico Global -->
-                <div class="filter-operator">
-                    <label for="operador-logico">Operador Lógico entre Criterios:</label>
-                    <select id="operador-logico">
-                        <option value="AND" selected>Y (AND) - Deben cumplirse TODOS los criterios</option>
-                        <option value="OR">O (OR) - Debe cumplirse AL MENOS UN criterio</option>
-                    </select>
+        <!-- ================================================================ DATOS -->
+        <section id="tab-datos" class="tab-content active" role="tabpanel">
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <div class="card-modern p-5">
+                    <h2 class="section-title">1. Planillas de notas (uno o varios grupos)</h2>
+                    <label class="dropzone" id="zonaNotas">
+                        <input type="file" id="archivoNotas" accept=".xlsx,.xls,.xlsm,.csv,.ods,.txt" class="sr-only" multiple>
+                        <span class="dz-icono" aria-hidden="true">📊</span>
+                        <span class="font-semibold">Seleccione o arrastre uno o varios archivos Excel o CSV</span>
+                        <span class="text-xs text-gray-500">Cada archivo, cada hoja o cada valor de la columna <b>Grupo</b> / <b>Asignatura</b> se carga como un grupo. Se leen todas las columnas: parciales (1P…), quices (Q1…), talleres, definitiva, faltas, observaciones, docente, recursos…</span>
+                    </label>
+                    <div id="listaGrupos" class="mt-4"></div>
+                    <div id="resumenNotas" class="mt-4"></div>
                 </div>
 
-                <!-- Contenedor de Criterios -->
-                <div id="criterios-container">
-                    <!-- Criterio 1 (por defecto) -->
-                    <div class="criterio-row" data-criterio-id="1">
-                        <div class="criterio-number">Criterio 1</div>
-                        <div class="criterio-controls">
-                            <div class="filter-item">
-                                <label>Evaluación:</label>
-                                <select class="criterio-evaluacion">
-                                    <option value="">Seleccione evaluación</option>
-                                </select>
+                <div class="card-modern p-5">
+                    <h2 class="section-title">2. Competencias por curso</h2>
+                    <label class="dropzone" id="zonaCompetencias">
+                        <input type="file" id="archivoCompetencias" accept=".xlsx,.xls,.xlsm,.ods,.csv" class="sr-only">
+                        <span class="dz-icono" aria-hidden="true">📚</span>
+                        <span class="font-semibold">Seleccione o arrastre el Excel de competencias</span>
+                        <span class="text-xs text-gray-500">Una hoja por curso con las columnas «Competencias» y «Criterios de Evaluación». Es común a todos los grupos; cada competencia se clasifica como analítica, práctica o de pensamiento crítico.</span>
+                    </label>
+                    <div id="cursoWrap" class="mt-3 hidden">
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                            <div>
+                                <label class="form-label" for="cursoActivo">Curso del grupo activo</label>
+                                <select id="cursoActivo" class="form-input"></select>
                             </div>
-
-                            <div class="filter-item">
-                                <label>Comparación:</label>
-                                <select class="criterio-comparacion">
-                                    <option value="lt">Menor que (&lt;)</option>
-                                    <option value="lte">Menor o igual (≤)</option>
-                                    <option value="gt">Mayor que (&gt;)</option>
-                                    <option value="gte">Mayor o igual (≥)</option>
-                                    <option value="eq">Igual que (=)</option>
-                                </select>
-                            </div>
-
-                            <div class="filter-item">
-                                <label>Valor de Nota:</label>
-                                <input type="number" class="criterio-valor" min="0" max="5" step="0.1" placeholder="0.0 - 5.0">
-                            </div>
-
-                            <div class="filter-item">
-                                <button class="btn-remove-criterio" onclick="return false;" title="Eliminar este criterio">❌</button>
+                            <div>
+                                <label class="form-label" for="nombreCurso">Nombre del curso <span class="text-xs text-gray-500">(corríjalo si Excel lo recortó)</span></label>
+                                <input id="nombreCurso" class="form-input" type="text">
                             </div>
                         </div>
                     </div>
-                </div>
-
-                <!-- Botón Agregar Criterio -->
-                <div class="filter-add">
-                    <button id="btn-agregar-criterio" class="btn-add">➕ Agregar Otro Criterio</button>
-                    <button id="btn-limpiar-criterios" class="btn-small">🗑️ Limpiar Todos</button>
-                </div>
-
-                <!-- Opciones Adicionales -->
-                <div class="filter-row">
-                    <div class="filter-checkbox">
-                        <input type="checkbox" id="incluir-nombres" checked>
-                        <label for="incluir-nombres">Incluir Competencias y Recomendaciones en el Informe</label>
+                    <div id="resumenCompetencias" class="mt-4"></div>
+                    <div id="accionesCompetencias" class="mt-3 hidden flex flex-wrap gap-2">
+                        <button type="button" class="btn btn-secondary btn-sm" id="cursoATodosBtn" title="Usa este curso de competencias en todos los grupos cargados">Usar este curso en todos los grupos</button>
+                        <button type="button" class="btn btn-secondary btn-sm" id="revisarCaracterBtn">Revisar el carácter de las competencias</button>
                     </div>
                 </div>
 
-                <!-- Resumen de Criterios -->
-                <div id="criterios-resumen" class="criterios-resumen">
-                    <strong>📝 Resumen:</strong> <span id="criterios-resumen-texto">Agregue al menos un criterio para filtrar</span>
+                <div class="card-modern p-5">
+                    <h2 class="section-title">3. Datos del grupo activo <span class="text-xs font-normal text-gray-500">(aparecen en los informes)</span></h2>
+                    <p class="text-xs text-gray-500 mb-3">Institución, programa y periodo se aplican a todos los grupos; asignatura, grupo y docente son de cada grupo.</p>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3" id="formCurso">
+                        <div class="sm:col-span-2"><label class="form-label" for="curso-institucion">Institución</label><input class="form-input" id="curso-institucion" data-campo="institucion" placeholder="Universidad / Colegio"></div>
+                        <div><label class="form-label" for="curso-programa">Programa / facultad</label><input class="form-input" id="curso-programa" data-campo="programa"></div>
+                        <div><label class="form-label" for="curso-asignatura">Asignatura</label><input class="form-input" id="curso-asignatura" data-campo="asignatura"></div>
+                        <div><label class="form-label" for="curso-grupo">Grupo</label><input class="form-input" id="curso-grupo" data-campo="grupo"></div>
+                        <div><label class="form-label" for="curso-periodo">Periodo</label><input class="form-input" id="curso-periodo" data-campo="periodo" placeholder="2026-2"></div>
+                        <div><label class="form-label" for="curso-docente">Docente</label><input class="form-input" id="curso-docente" data-campo="docente"></div>
+                        <div><label class="form-label" for="curso-correo">Correo del docente</label><input class="form-input" id="curso-correo" data-campo="correo" type="email"></div>
+                    </div>
                 </div>
 
-                <!-- Botón Filtrar -->
-                <div class="filter-buttons">
-                    <button id="btn-generar-reporte-evaluacion" class="btn-primary">🔍 Filtrar Estudiantes por Criterios</button>
+                <div class="card-modern p-5">
+                    <h2 class="section-title">4. Escala de calificación y criterios <span class="text-xs font-normal text-gray-500">(para todos los grupos)</span></h2>
+                    <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                        <div><label class="form-label" for="escala-minima">Nota mínima</label><input class="form-input" id="escala-minima" type="number" step="0.1" data-escala="minima"></div>
+                        <div><label class="form-label" for="escala-maxima">Nota máxima</label><input class="form-input" id="escala-maxima" type="number" step="0.1" data-escala="maxima"></div>
+                        <div><label class="form-label" for="escala-aprobatoria">Aprobatoria</label><input class="form-input" id="escala-aprobatoria" type="number" step="0.1" data-escala="aprobatoria"></div>
+                        <div><label class="form-label" for="escala-decimales">Decimales</label><input class="form-input" id="escala-decimales" type="number" min="0" max="3" data-escala="decimales"></div>
+                    </div>
+                    <div class="mt-4 space-y-2">
+                        <label class="check-pill"><input type="checkbox" id="opcionVacias"> <span>Una celda vacía en una evaluación ya calificada cuenta como <b>0</b> (no presentó)</span></label>
+                        <div class="flex flex-wrap items-center gap-2 text-sm">
+                            <label for="opcionUmbral">Riesgo alto si necesita más de</label>
+                            <input class="form-input w-20" id="opcionUmbral" type="number" step="0.1">
+                            <span>en lo que falta por evaluar</span>
+                        </div>
+                    </div>
+                    <h3 class="font-semibold text-sm text-gray-700 mt-4 mb-2">Niveles de desempeño <span class="font-normal text-xs text-gray-500">(nota desde la cual aplica)</span></h3>
+                    <div id="nivelesEditor" class="grid grid-cols-2 sm:grid-cols-4 gap-2"></div>
+                    <div class="mt-5 pt-4 border-t flex flex-wrap gap-2">
+                        <button type="button" class="btn btn-secondary btn-sm" id="cargarEjemploBtn">Cargar datos de ejemplo</button>
+                        <button type="button" class="btn btn-secondary btn-sm" id="descargarPlantillaBtn">Descargar plantilla de notas</button>
+                    </div>
                 </div>
             </div>
-        </div>
+        </section>
 
-        <!-- SECCIÓN 4: ESTUDIANTES FILTRADOS -->
-        <div id="filtered-student-list-container" class="full-width-section hidden">
-            <h3>👥 Estudiantes que cumplen el criterio <span id="contador-filtrados" style="color: #007BFF;"></span></h3>
-            <div style="margin-bottom: 10px;">
-                <button id="btn-seleccionar-todos-filtrados" class="btn-small">Seleccionar Todos</button>
-                <button id="btn-deseleccionar-todos-filtrados" class="btn-small">Deseleccionar Todos</button>
-            </div>
-            <div id="filtered-student-list" class="student-checkboxes"></div>
-            <button id="btn-generar-reporte-seleccionados" class="btn-success">📄 Generar Reporte para Seleccionados</button>
-        </div>
-
-        <!-- SECCIÓN 5: GENERACIÓN DE REPORTE GENERAL -->
-        <div class="full-width-section">
-            <h3>📊 Reporte General por Estudiante</h3>
-            <p style="font-size: 12px; color: #666;">Genere un reporte completo de todas las evaluaciones para uno o varios estudiantes.</p>
-
-            <label for="seleccion-estudiante">Seleccionar Estudiantes:</label>
-            <select id="seleccion-estudiante" multiple size="5">
-            </select>
-
-            <div style="margin: 10px 0;">
-                <button id="btn-seleccionar-todos" class="btn-small">Seleccionar Todos</button>
-                <button id="btn-deseleccionar-todos" class="btn-small">Deseleccionar Todos</button>
-            </div>
-
-            <button id="btn-generar-reporte-estudiante" class="btn-success">📄 Generar Reporte General de Notas</button>
-        </div>
-
-        <!-- MODAL POPUP PARA SELECCIÓN DE COMPETENCIAS -->
-        <div id="excel-popup" class="excel-popup">
-            <h3>Seleccione las competencias y sugerencias</h3>
-            <div id="excel-content"></div>
-            <button id="btn-aplicar-seleccion">Aplicar Selección</button>
-            <button id="btn-cerrar-popup">Cerrar</button>
-        </div>
-
-        <!-- SECCIÓN 6: VISTA PREVIA Y DESCARGA -->
-        <div id="vista-previa-section" class="full-width-section hidden">
-            <h3>👁️ Vista Previa del Reporte</h3>
-            <div id="vista-previa-contenido" class="preview-content"></div>
-
-            <div class="pdf-options">
-                <div class="pdf-option">
-                    <label for="tamano-hoja">Tamaño de Hoja:</label>
-                    <select id="tamano-hoja">
-                        <option value="letter">Carta</option>
-                        <option value="legal">Oficio</option>
-                    </select>
+        <!-- ================================================================ EVALUACIONES -->
+        <section id="tab-evaluaciones" class="tab-content" role="tabpanel">
+            <div class="card-modern p-5">
+                <div class="flex flex-wrap items-start justify-between gap-3 mb-4">
+                    <div>
+                        <h2 class="text-lg font-semibold">Evaluaciones, porcentajes y competencias</h2>
+                        <p class="text-sm text-gray-600">Defina cuánto vale cada evaluación, su fecha, las competencias que evalúa y los recursos para quien necesite reforzarla.</p>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <span class="text-sm text-gray-600">Suma de porcentajes:</span>
+                        <span id="totalPesos" class="badge text-base">0%</span>
+                    </div>
                 </div>
-
-                <div class="pdf-option">
-                    <label for="orientacion">Orientación:</label>
-                    <select id="orientacion">
-                        <option value="p">Vertical</option>
-                        <option value="l">Horizontal</option>
-                    </select>
+                <div class="flex flex-wrap items-end gap-2 mb-4">
+                    <div>
+                        <label class="form-label-sm" for="presetPesos">Repartir porcentajes</label>
+                        <select id="presetPesos" class="form-input"></select>
+                    </div>
+                    <button type="button" class="btn btn-secondary" id="aplicarPresetBtn">Aplicar</button>
+                    <span class="flex-1"></span>
+                    <button type="button" class="btn btn-secondary" id="distribuirCompBtn" title="Reparte las competencias del curso entre los parciales; cada quiz toma las de su parcial">Distribuir competencias</button>
+                    <button type="button" class="btn btn-secondary" id="sugerirTodosBtn" title="Crea enlaces de estudio para las evaluaciones que no tengan recursos">Sugerir recursos a todas</button>
+                    <button type="button" class="btn btn-secondary" id="configATodosBtn" title="Copia porcentajes, fechas, carácter, competencias y recursos a los grupos que tengan las mismas evaluaciones">Copiar a los demás grupos</button>
                 </div>
+                <div class="table-wrapper">
+                    <table class="data-table" id="tablaEvaluaciones">
+                        <thead><tr>
+                            <th>Incluir</th><th>Evaluación</th><th>Columna</th><th>Tipo</th><th>Fecha</th><th>Peso (%)</th><th>Notas</th><th>Competencias</th><th title="Analítico, práctico o pensamiento crítico. «Automático» lo toma de las competencias asociadas.">Carácter</th><th>Recursos</th>
+                        </tr></thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+                <div id="avisosEvaluaciones" class="mt-4"></div>
+            </div>
+        </section>
 
-                <button id="btn-descargar-pdf" class="btn-download">⬇️ Descargar Informe en PDF</button>
+        <!-- ================================================================ ANÁLISIS -->
+        <section id="tab-analisis" class="tab-content" role="tabpanel">
+            <div id="analisisVacio" class="card-modern p-8 text-center text-gray-600 hidden">Cargue una planilla de notas en la pestaña <b>1. Datos</b> para ver el análisis.</div>
+            <div id="analisisContenido">
+                <div id="kpis" class="grid grid-cols-2 md:grid-cols-5 gap-4 mb-6"></div>
+                <div id="avisosAnalisis"></div>
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+                    <div class="card-modern p-5"><h3 class="section-title">Distribución de promedios</h3><div id="graficoHistograma" class="grafico"></div></div>
+                    <div class="card-modern p-5"><h3 class="section-title">Media por evaluación</h3><div id="graficoMedias" class="grafico"></div></div>
+                    <div class="card-modern p-5"><h3 class="section-title">Estado académico</h3><div id="graficoEstados"></div></div>
+                    <div class="card-modern p-5"><h3 class="section-title">Niveles de desempeño (según promedio actual)</h3><div id="graficoNiveles"></div></div>
+                </div>
+                <div class="card-modern p-5 mb-6">
+                    <h3 class="section-title">Desempeño por carácter de las competencias</h3>
+                    <p class="text-xs text-gray-500 mb-3">Nota de cada estudiante en lo analítico, lo práctico y el pensamiento crítico, según las competencias (o el carácter) de cada evaluación calificada. «Logro»: porcentaje de estudiantes con nota igual o mayor a la aprobatoria.</p>
+                    <div id="dimensionesGrupo"></div>
+                </div>
+                <div class="card-modern p-5 mb-6">
+                    <h3 class="section-title">Estadísticas por evaluación</h3>
+                    <div class="table-wrapper"><table class="data-table data-table-compact" id="tablaEstadisticas"></table></div>
+                </div>
+                <div class="grid grid-cols-1 xl:grid-cols-2 gap-6">
+                    <div class="card-modern p-5">
+                        <h3 class="section-title">Competencias críticas</h3>
+                        <p class="text-xs text-gray-500 mb-3">Competencias con menor logro: porcentaje de estudiantes que alcanzan la aprobatoria en las evaluaciones que las miden.</p>
+                        <div id="competenciasCriticas"></div>
+                    </div>
+                    <div class="card-modern p-5">
+                        <h3 class="section-title">Alertas tempranas</h3>
+                        <p class="text-xs text-gray-500 mb-3">Estudiantes ordenados por la nota que necesitan en lo que falta (los primeros requieren atención inmediata).</p>
+                        <div id="alertas"></div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ================================================================ ESTUDIANTES -->
+        <section id="tab-estudiantes" class="tab-content" role="tabpanel">
+            <div class="card-modern p-5 mb-6">
+                <div class="flex flex-wrap items-center justify-between gap-2 mb-3">
+                    <h2 class="text-lg font-semibold">Filtrar estudiantes por criterios</h2>
+                    <div class="flex items-center gap-2 text-sm">
+                        <label for="operadorFiltro">Deben cumplirse</label>
+                        <select id="operadorFiltro" class="form-input w-auto">
+                            <option value="Y">todos los criterios (Y)</option>
+                            <option value="O">al menos un criterio (O)</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="flex flex-wrap gap-2 mb-3" id="filtrosRapidos"></div>
+                <div id="criteriosFiltro" class="space-y-2"></div>
+                <div class="flex flex-wrap gap-2 mt-3">
+                    <button type="button" class="btn btn-secondary btn-sm" id="agregarCriterioBtn">+ Agregar criterio</button>
+                    <button type="button" class="btn btn-ghost btn-sm" id="limpiarFiltroBtn">Quitar filtros</button>
+                </div>
+                <p class="text-sm mt-3 text-indigo-800" id="resumenFiltro"></p>
+            </div>
+
+            <div class="card-modern p-5">
+                <div class="flex flex-wrap items-center gap-2 mb-3">
+                    <input type="search" id="buscarEstudiante" class="form-input search-input w-64" placeholder="Buscar por nombre o documento" aria-label="Buscar estudiante">
+                    <span class="text-sm text-gray-600" id="conteoEstudiantes"></span>
+                    <span class="flex-1"></span>
+                    <button type="button" class="btn btn-secondary btn-sm" id="seleccionarVisiblesBtn">Seleccionar los mostrados</button>
+                    <button type="button" class="btn btn-secondary btn-sm" id="quitarSeleccionBtn">Quitar selección</button>
+                    <button type="button" class="btn btn-primary btn-sm" id="informeSeleccionadosBtn">Informe de seleccionados</button>
+                </div>
+                <div class="table-wrapper max-h-tabla">
+                    <table class="data-table data-table-compact" id="tablaEstudiantes"></table>
+                </div>
+                <div class="flex flex-wrap gap-3 mt-3 text-xs text-gray-600">
+                    <span><span class="nota-baja px-1">2.5</span> nota por debajo de la aprobatoria</span>
+                    <span><span class="nota-np px-1">NP</span> no presentó / celda vacía</span>
+                    <span>Haga clic en el nombre de un estudiante para ver su informe y escribir observaciones.</span>
+                </div>
+            </div>
+        </section>
+
+        <!-- ================================================================ INFORMES -->
+        <section id="tab-informes" class="tab-content" role="tabpanel">
+            <div class="grid grid-cols-1 lg:grid-cols-4 gap-6">
+                <div class="card-modern p-5 lg:col-span-1 self-start no-print">
+                    <h2 class="section-title">Opciones del informe</h2>
+                    <fieldset class="space-y-2">
+                        <legend class="form-label">Tipo de informe</legend>
+                        <label class="check-pill"><input type="radio" name="tipoInforme" value="seleccionados" checked> <span>Individual: seleccionados <b id="numSeleccionados">(0)</b></span></label>
+                        <label class="check-pill"><input type="radio" name="tipoInforme" value="filtrados"> <span>Individual: los del filtro <b id="numFiltrados">(0)</b></span></label>
+                        <label class="check-pill"><input type="radio" name="tipoInforme" value="todos"> <span>Individual: todo el grupo</span></label>
+                        <label class="check-pill"><input type="radio" name="tipoInforme" value="grupal"> <span>Grupal (coordinación)</span></label>
+                        <label class="check-pill"><input type="radio" name="tipoInforme" value="programa"> <span>Programa: todos los grupos <b id="numGruposInforme"></b></span></label>
+                    </fieldset>
+                    <div class="grid grid-cols-2 gap-2 mt-4">
+                        <div><label class="form-label-sm" for="tamanoHoja">Hoja</label>
+                            <select id="tamanoHoja" class="form-input"><option value="letter">Carta</option><option value="legal">Oficio</option><option value="a4">A4</option></select></div>
+                        <div><label class="form-label-sm" for="orientacion">Orientación</label>
+                            <select id="orientacion" class="form-input"><option value="p">Vertical</option><option value="l">Horizontal</option></select></div>
+                    </div>
+                    <fieldset class="space-y-1 mt-4 text-sm">
+                        <legend class="form-label">Incluir en el informe individual</legend>
+                        <label class="flex items-center gap-2"><input type="checkbox" data-opcion="incluirDimensiones"> Desempeño analítico, práctico y crítico</label>
+                        <label class="flex items-center gap-2"><input type="checkbox" data-opcion="incluirCompetencias"> Competencias a reforzar</label>
+                        <label class="flex items-center gap-2"><input type="checkbox" data-opcion="incluirRecursos"> Recursos recomendados</label>
+                        <label class="flex items-center gap-2"><input type="checkbox" data-opcion="incluirRecomendaciones"> Recomendaciones automáticas</label>
+                        <label class="flex items-center gap-2"><input type="checkbox" data-opcion="incluirDatosArchivo"> Otras columnas del archivo</label>
+                        <label class="flex items-center gap-2"><input type="checkbox" data-opcion="incluirFirmas"> Espacio para firmas</label>
+                    </fieldset>
+                    <label class="form-label mt-4" for="mensajeInforme">Mensaje final (opcional)</label>
+                    <textarea id="mensajeInforme" class="form-input" rows="3" placeholder="Ej.: Las asesorías son los martes de 2 a 4 p. m. en la oficina 305."></textarea>
+                    <div class="flex flex-col gap-2 mt-5">
+                        <button type="button" class="btn btn-primary" id="descargarPdfBtn">Descargar PDF</button>
+                        <button type="button" class="btn btn-success" id="exportarExcelBtn">Exportar consolidado a Excel</button>
+                        <button type="button" class="btn btn-success" id="exportarExcelProgramaBtn">Excel del programa (todos los grupos)</button>
+                        <button type="button" class="btn btn-secondary" id="imprimirBtn">Imprimir vista previa</button>
+                    </div>
+                </div>
+                <div class="lg:col-span-3">
+                    <div class="flex items-center justify-between mb-2 no-print">
+                        <h2 class="font-semibold text-gray-700">Vista previa <span class="text-sm font-normal text-gray-500" id="infoVistaPrevia"></span></h2>
+                    </div>
+                    <div id="vistaPrevia" class="vista-previa"></div>
+                </div>
+            </div>
+        </section>
+        <!-- ================================================================ PROGRAMA -->
+        <section id="tab-programa" class="tab-content" role="tabpanel">
+            <div id="programaVacio" class="card-modern p-8 text-center text-gray-600 hidden">Cargue uno o varios grupos en la pestaña <b>1. Datos</b> para ver el análisis global del programa.</div>
+            <div id="programaContenido">
+                <div class="flex flex-wrap items-center justify-between gap-3 mb-4">
+                    <div>
+                        <h2 class="text-lg font-semibold">Análisis global del programa</h2>
+                        <p class="text-sm text-gray-600" id="programaSubtitulo"></p>
+                    </div>
+                    <div class="flex flex-wrap gap-2">
+                        <button type="button" class="btn btn-secondary" id="programaCaracterBtn">Carácter de las competencias</button>
+                        <button type="button" class="btn btn-primary" id="programaPdfBtn">Informe PDF del programa</button>
+                        <button type="button" class="btn btn-success" id="programaExcelBtn">Excel del programa</button>
+                    </div>
+                </div>
+                <div id="programaKpis" class="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-4 mb-6"></div>
+                <div id="programaAvisos"></div>
+                <div class="card-modern p-5 mb-6">
+                    <h3 class="section-title">Desempeño por carácter de las competencias</h3>
+                    <p class="text-xs text-gray-500 mb-3">Analítico: comprender, interpretar y analizar. Práctico: aplicar procedimientos, resolver y calcular. Pensamiento crítico: evaluar, justificar, modelar y decidir ante problemas. Se calcula con las notas de las evaluaciones según las competencias que miden.</p>
+                    <div id="programaDims" class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4"></div>
+                    <div class="grid grid-cols-1 xl:grid-cols-2 gap-6">
+                        <div><h4 class="font-semibold text-sm text-gray-700 mb-1">Media por carácter en cada grupo</h4><div id="programaGraficoDims" class="grafico"></div></div>
+                        <div><h4 class="font-semibold text-sm text-gray-700 mb-1">Promedio actual por grupo</h4><div id="programaGraficoGrupos" class="grafico"></div></div>
+                    </div>
+                </div>
+                <div class="grid grid-cols-1 xl:grid-cols-2 gap-6 mb-6">
+                    <div class="card-modern p-5"><h3 class="section-title">Hallazgos</h3><ul id="programaHallazgos" class="lista-hallazgos"></ul></div>
+                    <div class="card-modern p-5"><h3 class="section-title">Recomendaciones para el programa</h3><div id="programaRecomendaciones"></div></div>
+                </div>
+                <div class="card-modern p-5 mb-6">
+                    <h3 class="section-title">Comparativo de grupos</h3>
+                    <p class="text-xs text-gray-500 mb-3">Haga clic en un grupo para trabajar con él en las pestañas 2 a 5. Entre paréntesis: porcentaje de estudiantes con logro en ese carácter.</p>
+                    <div class="table-wrapper"><table class="data-table data-table-compact" id="programaTablaGrupos"></table></div>
+                    <div id="programaPorCurso" class="mt-4"></div>
+                </div>
+                <div class="grid grid-cols-1 xl:grid-cols-2 gap-6 mb-6">
+                    <div class="card-modern p-5">
+                        <h3 class="section-title">Competencias del programa</h3>
+                        <div class="flex flex-wrap gap-2 mb-3 text-sm">
+                            <select id="programaFiltroDim" class="form-input w-auto" aria-label="Filtrar por carácter"></select>
+                            <select id="programaOrdenComp" class="form-input w-auto" aria-label="Orden">
+                                <option value="bajo">Menor logro primero</option>
+                                <option value="alto">Mayor logro primero</option>
+                            </select>
+                        </div>
+                        <div id="programaCompetencias" class="max-h-panel overflow-y-auto pr-1"></div>
+                    </div>
+                    <div class="card-modern p-5">
+                        <h3 class="section-title">Evaluaciones con menor aprobación</h3>
+                        <div id="programaEvaluaciones" class="max-h-panel overflow-y-auto"></div>
+                    </div>
+                </div>
+                <div class="card-modern p-5">
+                    <h3 class="section-title">Estudiantes en riesgo en todo el programa</h3>
+                    <div class="flex flex-wrap gap-2 mb-3">
+                        <input type="search" id="programaBuscar" class="form-input search-input w-64" placeholder="Buscar estudiante o grupo" aria-label="Buscar estudiante en riesgo">
+                        <select id="programaFiltroEstado" class="form-input w-auto" aria-label="Estado"></select>
+                        <span class="text-sm text-gray-600 self-center" id="programaConteoRiesgo"></span>
+                    </div>
+                    <div class="table-wrapper max-h-tabla"><table class="data-table data-table-compact" id="programaRiesgo"></table></div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ================================================================ MANUAL -->
+        <section id="tab-manual" class="tab-content" role="tabpanel">
+            <div class="grid grid-cols-1 lg:grid-cols-4 gap-6">
+                <aside class="card-modern p-4 lg:col-span-1 self-start manual-lateral">
+                    <h2 class="section-title mb-2">Manual del usuario</h2>
+                    <p class="text-xs text-gray-500 mb-3">Haga clic en un tema para ir a su página. Dentro del PDF, el índice, el mapa rápido y las referencias también son enlaces.</p>
+                    <input type="search" id="manualBuscar" class="form-input search-input mb-3" placeholder="Buscar tema" aria-label="Buscar tema del manual">
+                    <nav id="manualIndice" class="manual-indice" aria-label="Contenido del manual"></nav>
+                    <div class="flex flex-col gap-2 mt-4">
+                        <a class="btn btn-secondary btn-sm" id="manualNuevaPestana" href="manual/manual_usuario.pdf" target="_blank" rel="noopener">Abrir en otra pestaña</a>
+                        <a class="btn btn-primary btn-sm" href="manual/manual_usuario.pdf" download="Manual_Analista_Academico.pdf">Descargar el PDF</a>
+                    </div>
+                </aside>
+                <div class="lg:col-span-3">
+                    <div class="flex flex-wrap items-center justify-between gap-2 mb-2">
+                        <h2 class="font-semibold text-gray-700" id="manualTitulo">Manual del usuario</h2>
+                        <div class="flex gap-2">
+                            <button type="button" class="btn btn-secondary btn-sm" id="manualAnteriorBtn">‹ Tema anterior</button>
+                            <button type="button" class="btn btn-secondary btn-sm" id="manualSiguienteBtn">Tema siguiente ›</button>
+                        </div>
+                    </div>
+                    <iframe id="manualVisor" class="manual-visor" title="Manual del usuario (PDF)"></iframe>
+                    <p class="text-xs text-gray-500 mt-2">Si el visor no muestra el PDF, use «Abrir en otra pestaña» o «Descargar el PDF».</p>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- ================================================================ MODALES -->
+    <div id="modalCompetencias" class="modal fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50" aria-hidden="true" role="dialog" aria-labelledby="tituloModalComp">
+        <div class="modal-content bg-white w-full max-w-4xl max-h-90vh flex flex-col">
+            <div class="p-5 border-b">
+                <h3 class="text-lg font-semibold" id="tituloModalComp">Competencias</h3>
+                <div class="flex flex-wrap gap-2 mt-3">
+                    <select id="compCurso" class="form-input w-auto" aria-label="Curso"></select>
+                    <input type="search" id="compBuscar" class="form-input search-input flex-1 min-w-0" placeholder="Buscar competencia o criterio" aria-label="Buscar competencia">
+                    <button type="button" class="btn btn-secondary btn-sm" id="compTodasBtn">Marcar visibles</button>
+                    <button type="button" class="btn btn-secondary btn-sm" id="compNingunaBtn">Desmarcar todas</button>
+                </div>
+            </div>
+            <div class="p-5 overflow-y-auto flex-1" id="compLista"></div>
+            <div class="p-4 border-t flex items-center justify-between gap-2">
+                <span class="text-sm text-gray-600" id="compConteo"></span>
+                <div class="flex gap-2">
+                    <button type="button" class="btn btn-secondary" data-cerrar="modalCompetencias">Cancelar</button>
+                    <button type="button" class="btn btn-primary" id="compGuardarBtn">Guardar</button>
+                </div>
             </div>
         </div>
     </div>
 
-    <script src="js/main.js?v=2.3"></script>
+    <div id="modalRecursos" class="modal fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50" aria-hidden="true" role="dialog" aria-labelledby="tituloModalRec">
+        <div class="modal-content bg-white w-full max-w-4xl max-h-90vh flex flex-col">
+            <div class="p-5 border-b">
+                <h3 class="text-lg font-semibold" id="tituloModalRec">Recursos</h3>
+                <p class="text-xs text-gray-500 mt-1">Uno por línea. Formato: <code>Título | https://enlace</code>, solo el enlace, o texto libre (p. ej. «Libro guía, pág. 45, ejercicios 1 a 20»). Se recomiendan a quien pierda o no presente esta evaluación.</p>
+            </div>
+            <div class="p-5 overflow-y-auto flex-1 grid grid-cols-1 md:grid-cols-2 gap-4" id="recursosCampos"></div>
+            <div class="p-4 border-t flex flex-wrap items-center justify-between gap-2">
+                <button type="button" class="btn btn-secondary" id="recSugerirBtn">Sugerir a partir de las competencias</button>
+                <div class="flex gap-2">
+                    <button type="button" class="btn btn-secondary" data-cerrar="modalRecursos">Cancelar</button>
+                    <button type="button" class="btn btn-primary" id="recGuardarBtn">Guardar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="modalEstudiante" class="modal fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50" aria-hidden="true" role="dialog" aria-labelledby="tituloModalEst">
+        <div class="modal-content bg-white w-full max-w-5xl max-h-90vh flex flex-col">
+            <div class="p-4 border-b flex items-center justify-between gap-2">
+                <h3 class="text-lg font-semibold" id="tituloModalEst">Estudiante</h3>
+                <div class="flex gap-2">
+                    <button type="button" class="btn btn-secondary btn-sm" id="estAnteriorBtn" aria-label="Estudiante anterior">‹ Anterior</button>
+                    <button type="button" class="btn btn-secondary btn-sm" id="estSiguienteBtn" aria-label="Estudiante siguiente">Siguiente ›</button>
+                </div>
+            </div>
+            <div class="overflow-y-auto flex-1 p-4 bg-gray-100">
+                <div class="mb-3 bg-white rounded-lg p-3 border">
+                    <label class="form-label" for="estObservacion">Observaciones del docente para este estudiante</label>
+                    <textarea id="estObservacion" class="form-input" rows="2" placeholder="Se guardan automáticamente y aparecen en su informe."></textarea>
+                </div>
+                <div id="estVista" class="vista-previa"></div>
+            </div>
+            <div class="p-4 border-t flex flex-wrap justify-end gap-2">
+                <label class="check-pill text-sm"><input type="checkbox" id="estSeleccionado"> Seleccionado para informe</label>
+                <button type="button" class="btn btn-primary" id="estPdfBtn">Descargar su PDF</button>
+                <button type="button" class="btn btn-secondary" data-cerrar="modalEstudiante">Cerrar</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="modalDimensiones" class="modal fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50" aria-hidden="true" role="dialog" aria-labelledby="tituloModalDim">
+        <div class="modal-content bg-white w-full max-w-5xl max-h-90vh flex flex-col">
+            <div class="p-5 border-b">
+                <h3 class="text-lg font-semibold" id="tituloModalDim">Carácter de las competencias</h3>
+                <p class="text-xs text-gray-500 mt-1">La clasificación automática se hace por el verbo con que empieza la competencia y por las palabras de su criterio (taxonomía de Bloom simplificada). Corríjala cuando no corresponda: el cambio se aplica a todos los grupos.</p>
+                <div class="flex flex-wrap gap-2 mt-3">
+                    <select id="dimCurso" class="form-input w-auto" aria-label="Curso"></select>
+                    <select id="dimFiltro" class="form-input w-auto" aria-label="Filtrar por carácter"></select>
+                    <input type="search" id="dimBuscar" class="form-input search-input flex-1 min-w-0" placeholder="Buscar competencia" aria-label="Buscar competencia">
+                </div>
+                <div id="dimResumen" class="chips mt-3"></div>
+            </div>
+            <div class="p-5 overflow-y-auto flex-1" id="dimLista"></div>
+            <div class="p-4 border-t flex flex-wrap items-center justify-between gap-2">
+                <button type="button" class="btn btn-secondary" id="dimRestablecerBtn">Volver a la clasificación automática</button>
+                <button type="button" class="btn btn-primary" data-cerrar="modalDimensiones">Listo</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="modalConfirmar" class="modal fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50" aria-hidden="true" role="alertdialog" aria-labelledby="confirmarTitulo">
+        <div class="modal-content bg-white w-full max-w-md p-6">
+            <h3 class="text-lg font-semibold mb-2" id="confirmarTitulo">Confirmar</h3>
+            <p class="text-gray-700 mb-6 whitespace-pre-line" id="confirmarMensaje"></p>
+            <div class="flex justify-end gap-2">
+                <button type="button" class="btn btn-secondary" id="confirmarCancelarBtn">Cancelar</button>
+                <button type="button" class="btn btn-primary" id="confirmarAceptarBtn">Aceptar</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="toastContainer" class="toast-container" aria-live="polite"></div>
+    <div id="loadingScreen" class="loading-overlay" role="status" aria-live="polite">
+        <div class="spinner-modern"></div>
+        <p id="loadingText" class="mt-4 text-gray-700 font-medium">Procesando...</p>
+        <div id="loadingProgressContainer" class="w-64 bg-gray-200 rounded-full h-2 mt-3" style="display:none"><div id="loadingProgressBar" class="bg-indigo-600 h-2 rounded-full" style="width:0%"></div></div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
+
+    <script src="js/config.js"></script>
+    <script src="js/utilidades.js"></script>
+    <script src="js/analisis.js"></script>
+    <script src="js/lectura.js"></script>
+    <script src="js/estado.js"></script>
+    <script src="js/programa.js"></script>
+    <script src="js/recursos.js"></script>
+    <script src="js/informes.js"></script>
+    <script src="js/datos-ejemplo.js"></script>
+    <script src="js/ui-datos.js"></script>
+    <script src="js/ui-evaluaciones.js"></script>
+    <script src="js/ui-analisis.js"></script>
+    <script src="js/ui-estudiantes.js"></script>
+    <script src="js/ui-informes.js"></script>
+    <script src="js/ui-programa.js"></script>
+    <script src="manual/manual-indice.js"></script>
+    <script src="js/ui-manual.js"></script>
+    <script src="js/app.js"></script>
 </body>
 </html>
