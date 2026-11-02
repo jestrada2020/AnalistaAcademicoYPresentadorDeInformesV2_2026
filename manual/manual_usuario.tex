@@ -201,7 +201,7 @@ Todo lo que aparece en \textcolor{primario}{\textbf{este color}} es un enlace: h
 \end{center}
 
 \vfill
-{\small\color{gris} Fecha de esta edición: 7 de octubre de 2026. La aplicación funciona en el navegador abriendo \texttt{index.html}; no necesita instalación.}
+{\small\color{gris} Fecha de esta edición: 2 de noviembre de 2026. La aplicación funciona en el navegador abriendo \texttt{index.html}; no necesita instalación.}
 \clearpage
 
 % ---------------------------------------------------------------- Mapa rápido
@@ -400,12 +400,42 @@ Cuando vuelve a cargar el mismo archivo, sus grupos se \textbf{actualizan} (no s
 \end{itemize}
 
 \section{Catálogo de competencias}\label{sec:catalogo}
-Un libro de Excel con \textbf{una hoja por curso}. Cada hoja tiene las columnas \col{Competencias} (\texttt{1. Texto de la competencia…}) y \col{Criterios de Evaluación}. Columnas opcionales \col{Páginas web}, \col{Videos}, \col{Ejercicios} y \col{Herramientas} se usan como recursos de cada competencia.
+Un libro de Excel con \textbf{una hoja por curso}. Cada hoja tiene las columnas \col{Competencias} (\texttt{1. Texto de la competencia…}), \col{Criterios de Evaluación} y \col{Pensamiento Critico}. Las columnas opcionales \col{Páginas web}, \col{Videos}, \col{Ejercicios} y \col{Herramientas} se usan como recursos de cada competencia.
 \begin{itemize}
   \item Las filas sin número al final de la hoja se guardan como \emph{notas del curso}.
   \item Excel recorta los nombres de hoja a 31 caracteres; puede corregir el nombre del curso en la aplicación, ver \ver{sec:cargarcatalogo}.
   \item El verbo con que empieza cada competencia define su carácter automático, ver \ver{sec:clasificacion}. Redáctelas empezando por el verbo: «Analizar…», «Aplicar…», «Justificar…».
+  \item Los catálogos antiguos de dos columnas se pueden seguir cargando; simplemente no mostrarán la nueva evidencia.
 \end{itemize}
+
+\section{Evidencia de pensamiento crítico y rúbrica}\label{sec:evidenciapc}
+La tercera columna, \col{Pensamiento Critico}, contiene para cada competencia una \textbf{evidencia observable} redactada a partir de su texto y de su criterio de evaluación. No es una definición abstracta: describe lo que el estudiante puede hacer para demostrar pensamiento crítico.
+
+La evidencia integra las siguientes vías:
+\begin{itemize}
+  \item \textbf{Observación de la realidad}: describe ejemplos o situaciones, distingue información relevante y formula preguntas.
+  \item \textbf{Reflexión}: analiza supuestos, relaciones, decisiones, resultados, errores o alternativas y contrasta su razonamiento con el criterio de evaluación.
+  \item \textbf{Hábito de la escritura}: registra lo aprendido, sus decisiones y sus dudas para hacer visible su razonamiento.
+  \item \textbf{Conversación}: dialoga, escucha argumentos y explica lo aprendido con seguridad y dominio, adaptándose a sus entornos sociales y académicos.
+\end{itemize}
+
+La \textbf{rúbrica común 0--5} permite clasificar qué tan presente está esa evidencia en la actuación del estudiante:
+
+\begin{longtable}{>{\raggedright\arraybackslash}p{2.2cm}>{\raggedright\arraybackslash}p{2.5cm}>{\raggedright\arraybackslash}p{10.4cm}}
+\toprule
+\textbf{Intervalo} & \textbf{Nivel} & \textbf{Presencia de la evidencia}\\\midrule\endhead
+0,00--0,99 & No evidente & No describe lo observado ni relaciona ideas con el criterio. Su escritura o conversación requiere guía constante y todavía no comunica lo aprendido con seguridad.\\
+1,00--1,99 & Incipiente & Reconoce aspectos obvios, opina con poca justificación y escribe o conversa de forma fragmentaria; necesita preguntas de apoyo.\\
+2,00--2,99 & En desarrollo & Observa datos relevantes, reflexiona parcialmente y contrasta algunas ideas. Se comunica con cierta seguridad, pero aún necesita apoyo para profundizar o considerar otras perspectivas.\\
+3,00--3,99 & Logrado & Observa con precisión, reflexiona con base en el criterio y sustenta conclusiones. Escribe y conversa con seguridad y dominio, escucha otros argumentos y adapta su explicación a entornos sociales y académicos.\\
+4,00--4,59 & Alto & Evalúa alternativas, revisa sus supuestos con evidencia, dialoga constructivamente y adapta con autonomía sus explicaciones a distintos públicos.\\
+4,60--5,00 & Superior & Integra observación, reflexión y diálogo para formular juicios matizados y transferir lo aprendido. Escribe y conversa con independencia, seguridad y dominio en contextos diversos.\\
+\bottomrule
+\end{longtable}
+
+\begin{atencion}
+La puntuación de la rúbrica \textbf{la asigna el docente al observar la evidencia}; no es una nota automática de la competencia y no cambia los cálculos de las evaluaciones. Puede consultar la rúbrica en el comentario del encabezado \col{Pensamiento Critico} en Excel o en \ui{Revisar el carácter de las competencias} dentro de la aplicación.
+\end{atencion}
 
 \section{Plantilla y datos de ejemplo}\label{sec:plantilla}
 En la pestaña 1, \ui{Descargar plantilla de notas} entrega un Excel con las columnas recomendadas, un catálogo de ejemplo y las instrucciones. \ui{Cargar datos de ejemplo} crea tres grupos de Cálculo Diferencial (60 estudiantes) para conocer la aplicación sin sus archivos.
@@ -499,7 +529,7 @@ Los cambios se guardan al salir de cada campo.
 \section{Porcentajes}\label{sec:pesos}
 \begin{itemize}
   \item La \textbf{Suma de porcentajes} aparece en verde cuando suma 100\,\%.
-  \item \ui{Repartir porcentajes} + \ui{Aplicar}: \emph{Todas iguales}, \emph{Parciales 80\,\% · Quices 20\,\%} (sugerido al cargar), \emph{70/30} o \emph{60/40}. Talleres y seguimientos comparten el porcentaje de los quices.
+  \item \ui{Repartir porcentajes} + \ui{Aplicar}: \emph{Todas iguales}, \emph{Parciales 80\,\% · Quices 20\,\%} (sugerido al cargar), \emph{70/30} o \emph{60/40}. El reparto entre parciales y quices suma 100\,\%. Los talleres, seguimientos y demás evaluaciones quedan con 0\,\% y se muestran en una advertencia para que usted decida si les asigna un peso manualmente.
   \item Las evaluaciones pendientes también llevan porcentaje: sirven para calcular la nota necesaria (\ver{sec:formulas}).
 \end{itemize}
 
@@ -528,10 +558,11 @@ Ver \ver{sec:dimnota} para saber cómo se usa este perfil.
 \captura[0.8\linewidth]{modal_recursos.jpg}{Recursos de una evaluación: se recomiendan a quien la pierda o no la presente.}{modalrec}
 \begin{itemize}
   \item Cuatro listas: \textbf{páginas web}, \textbf{videos}, \textbf{ejercicios} y \textbf{herramientas}. Uno por línea con el formato \texttt{Título | https://enlace}, solo el enlace o texto libre.
-  \item \ui{Sugerir a partir de las competencias} crea búsquedas en Khan Academy, YouTube y Google y herramientas del área. \ui{Sugerir recursos a todas} lo hace para todas las evaluaciones sin recursos.
+  \item \ui{Sugerir a partir de las competencias} asigna primero recursos temáticos del canal público \textbf{john estrada} y de los sitios UCES Matemáticas Uno, Dos y Tres. En programación utiliza el tutorial oficial de Python y en inteligencia artificial, Google Machine Learning. Después añade búsquedas en Khan Academy, YouTube y Google y herramientas del área. \ui{Sugerir recursos a todas} lo hace para todas las evaluaciones sin recursos.
+  \item El catálogo \texttt{COMPETENCIASporCURSOS.xlsx} incluye esas asociaciones para cada competencia y criterio: 269 videos directos del canal y 171 búsquedas específicas con el tema y el nombre del canal.
 \end{itemize}
 \begin{atencion}
-Las sugerencias son enlaces de búsqueda, no páginas revisadas. Revíselas o reemplácelas por su propio material.
+Los videos directos fueron asociados por reglas temáticas y los demás enlaces son búsquedas, no páginas revisadas una por una. Revise la pertinencia de cada recurso antes de compartirlo o reemplácelo por su propio material.
 \end{atencion}
 
 \section{Copiar a los demás grupos}\label{sec:copiar}
@@ -638,16 +669,39 @@ Programa & Informe global de todos los grupos (\ver{sec:infprog}).\\
 \bottomrule
 \end{tabularx}
 
+\section{Informes unificados entre archivos y grupos}\label{sec:unificados}
+En el bloque \textbf{Entre archivos y grupos} hay tres opciones adicionales:
+\begin{description}[style=nextline,leftmargin=1.2em,font=\color{primario}\bfseries]
+  \item[Unificado: estudiantes comunes] Genera un informe por cada persona encontrada en dos o más grupos. Es la opción recomendada para revisar estudiantes que repiten archivo o tienen matrícula en varios grupos.
+  \item[Unificado: todas las personas] Incluye tanto a los estudiantes comunes como a los que aparecen en un solo grupo.
+  \item[Grupos: un informe por grupo] Genera un informe grupal independiente para cada grupo cargado y los reúne en un solo PDF.
+\end{description}
+
+Cada informe unificado comienza con los datos de la persona y un resumen global. Después presenta \textbf{una sección por matrícula}, con su grupo, archivo, evaluaciones, porcentajes, promedio, estado, competencias, recursos y observaciones. Las notas no se mezclan aunque dos grupos tengan columnas con el mismo nombre.
+
+El \textbf{promedio descriptivo} es la media de los promedios actuales de las matrículas. No es una nota final combinada ni reemplaza los resultados de cada grupo.
+
+\begin{atencion}
+La unificación normal exige que coincidan \textbf{documento y nombre} después de normalizar mayúsculas, tildes, signos y espacios. Si el mismo documento aparece con nombres distintos, las matrículas con nombres distintos se mantienen separadas y se informa un conflicto. Sin documento solo se usa el nombre exacto normalizado y se advierte el riesgo de homónimos.
+\end{atencion}
+
+Los conflictos se muestran en los avisos de la pestaña 6 y en la hoja \emph{Conflictos identidad} del Excel del programa. Revise el Excel original si encuentra una coincidencia de documento atribuida a personas diferentes.
+
 \section{Opciones}\label{sec:opcionesinf}
 \begin{itemize}
   \item \textbf{Hoja} (carta, oficio, A4) y \textbf{orientación}. El informe del programa siempre sale horizontal.
-  \item \textbf{Incluir en el informe individual}: desempeño analítico, práctico y crítico; competencias a reforzar; recursos recomendados; recomendaciones automáticas; otras columnas del archivo; espacio para firmas.
+  \item \textbf{Identificación del estudiante}: elija \emph{Apellidos y nombres}, \emph{Apellidos y nombres + ID / C.C.} o \emph{Solo ID / C.C.}. La primera opción oculta el documento; la última cambia el encabezado por el documento, pero conserva el nombre en las firmas. También se aplica a los informes unificados.
+  \item \textbf{Percepción del pensamiento crítico}: \emph{No incluir} (valor predeterminado), \emph{General y muy breve} o \emph{Concreta, con evidencias}. La general resume el desempeño actual; la concreta compara la nota con la media del grupo y presenta hasta tres evidencias del catálogo para observar y dialogar.
+  \item \textbf{Incluir en el informe individual}: desempeño analítico, práctico y crítico; competencias a reforzar; \textbf{columna de pensamiento crítico}; recursos recomendados; recomendaciones automáticas; otras columnas del archivo; espacio para firmas. La columna y los recursos están activados por defecto; si no desea verlos, desmarque la casilla correspondiente. Si no hay recursos disponibles, el informe muestra una explicación en lugar de dejar la sección vacía. Los respaldos antiguos completan automáticamente la evidencia y los enlaces web/video faltantes sin reemplazar contenido editado.
   \item \textbf{Mensaje final}: por ejemplo el horario de asesorías.
 \end{itemize}
+\begin{atencion}
+La percepción es una lectura formativa basada en las evaluaciones. No asigna automáticamente los niveles de la rúbrica 0--5 a partir de una nota: la presencia de la evidencia debe valorarla el docente (\ver{sec:evidenciapc}).
+\end{atencion}
 
 \section{Contenido de cada informe}\label{sec:contenidoinf}
 \begin{description}[style=nextline,leftmargin=1.2em,font=\color{primario}\bfseries]
-  \item[Individual] Encabezado del curso; datos del estudiante; indicadores (acumulado, promedio, desempeño, estado, nota necesaria); tabla por evaluación con la media del grupo; gráfico; \textbf{desempeño por carácter} con lectura «Fortaleza / Logrado / Por fortalecer»; competencias a reforzar (hasta 12, las comprometidas en más evaluaciones); recursos con enlaces activos; recomendaciones; observaciones; firmas.
+  \item[Individual] Encabezado del curso; identificación del estudiante según el selector; indicadores (acumulado, promedio, desempeño, estado, nota necesaria); tabla por evaluación con la media del grupo; gráfico; \textbf{desempeño por carácter} con lectura «Fortaleza / Logrado / Por fortalecer»; percepción general o concreta del pensamiento crítico si se eligió; competencias a reforzar (hasta 12, las comprometidas en más evaluaciones); recursos con enlaces activos; recomendaciones; observaciones; firmas. La tabla \textbf{Competencias a reforzar} presenta número, competencia, criterio de evaluación, pensamiento crítico, evaluación y tipo (parcial, quiz u otro). Competencia, criterio y pensamiento crítico tienen texto justificado y ancho reducido para dejar espacio a las demás columnas. Si el contenido resulta difícil de leer, seleccione orientación horizontal. La evidencia se adapta al resultado: \textbf{muy incipiente} para notas muy bajas, \textbf{limitada} cuando está por debajo de la aprobatoria e \textbf{insuficiente} cuando no presentó la evaluación. Cada fila incluye evaluación y nota o ausencia, explica la limitación y propone acciones de observación, reflexión, escritura y conversación en lugar de afirmar dominio.
   \item[Grupal] Indicadores; cuatro gráficos; desempeño por carácter; estadísticas por evaluación; estudiantes en riesgo; logro por competencia; competencias críticas; mejores promedios; consolidado de notas.
   \item[Programa] Ver \ver{sec:infprog}.
 \end{description}
@@ -669,7 +723,7 @@ Esta pestaña junta a todos los estudiantes de todos los grupos cargados. Sirve 
 
 \section{Indicadores globales}\label{sec:kpisprog}
 \captura{programa_kpis.jpg}{Indicadores del programa.}{kpisprog}
-Grupos y docentes, estudiantes, promedio del programa, cuántos van aprobando, cuántos están en riesgo o perdiendo y la \textbf{brecha entre grupos} (diferencia entre el mejor promedio y el más bajo, \ver{sec:indprog}).
+Grupos y docentes, \textbf{matrículas}, personas únicas y estudiantes comunes, promedio del programa, cuántos van aprobando, cuántos están en riesgo o perdiendo y la \textbf{brecha entre grupos} (diferencia entre el mejor promedio y el más bajo, \ver{sec:indprog}). Los avisos señalan documentos con nombres distintos que se mantuvieron separados (\ver{sec:unificados}).
 
 \section{Desempeño por carácter en el programa}\label{sec:dimprog}
 \captura{programa_caracter.jpg}{Carácter de las competencias en todo el programa y en cada grupo.}{dimprog}
@@ -703,7 +757,7 @@ Busque por nombre o grupo y filtre por estado. Haga clic en un nombre para abrir
 \section{Informes del programa}\label{sec:infprog}
 \begin{itemize}
   \item \ui{Informe PDF del programa}: hoja horizontal con indicadores, hallazgos, carácter, gráficos, comparativo de grupos, por curso, competencias con menor y mayor logro, evaluaciones críticas, recomendaciones y estudiantes en riesgo.
-  \item \ui{Excel del programa}: hojas \emph{Resumen}, \emph{Grupos}, \emph{Por curso}, \emph{Competencias}, \emph{Evaluaciones}, \emph{Estudiantes} (todos, con su grupo y notas por carácter) y \emph{Clasificación} (carácter de cada competencia de los cursos en uso, automático y corregido).
+  \item \ui{Excel del programa}: hojas \emph{Resumen}, \emph{Grupos}, \emph{Por curso}, \emph{Competencias}, \emph{Evaluaciones}, \emph{Estudiantes} (matrículas con su grupo y notas por carácter), \emph{Personas unificadas}, \emph{Estudiantes comunes}, \emph{Conflictos identidad} y \emph{Clasificación} (carácter y evidencia de pensamiento crítico de cada competencia de los cursos en uso).
   \item \ui{Carácter de las competencias}: abre la ventana de corrección (\ver{sec:corregir}).
 \end{itemize}
 
@@ -750,10 +804,11 @@ Cada competencia del catálogo se clasifica al cargarlo:
 \begin{pasos}
   \item Ábrala con \ui{Revisar el carácter de las competencias} (pestaña 1) o \ui{Carácter de las competencias} (pestaña 6).
   \item Elija el curso (los que están en uso aparecen primero), filtre por carácter o busque.
+  \item Debajo de cada criterio aparece la \textbf{evidencia de pensamiento crítico} procedente de la tercera columna del catálogo. El desplegable \ui{Rúbrica común de evidencia de pensamiento crítico (0--5)} explica sus intervalos (\ver{sec:evidenciapc}).
   \item Cambie el carácter en la lista de la derecha. La opción marcada «(automático)» es la clasificación original.
   \item Las competencias corregidas muestran «Corregida (automática: …)». \ui{Volver a la clasificación automática} quita las correcciones del curso.
 \end{pasos}
-El cambio se aplica a todos los grupos y se recalcula todo al instante. Se conserva aunque vuelva a cargar el catálogo.
+El cambio se aplica a todos los grupos y se recalcula todo al instante. Se conserva aunque vuelva a cargar el catálogo. La evidencia también aparece al asociar competencias a una evaluación y en las hojas \emph{Plan por estudiante} y \emph{Clasificación} de los Excel exportados.
 
 \section{De la competencia a la nota por carácter}\label{sec:dimnota}
 \begin{enumerate}
@@ -918,6 +973,7 @@ Los archivos se leen en su navegador; ningún dato se envía a internet. Solo se
   \item En \pest{cap:programa}{6. Programa} mire la tarjeta de \dimC: su media, su logro y \textbf{qué parte del peso} tiene (\ver{sec:dimprog}).
   \item Si pesa poco o nada, incluya en las próximas evaluaciones problemas abiertos, estudios de caso, proyectos o preguntas de justificación.
   \item Asocie a esas evaluaciones competencias de modelación, validación o argumentación, o fije su carácter como \dimC\ (\ver{sec:caracterev}).
+  \item Lea la evidencia de la columna \col{Pensamiento Critico} y planee actividades de observación de la realidad, reflexión, escritura y conversación. Use la rúbrica 0--5 para registrar hasta qué punto cada estudiante comunica lo aprendido con seguridad y dominio en sus entornos sociales y académicos (\ver{sec:evidenciapc}).
   \item Revise que las competencias del curso estén bien clasificadas (\ver{sec:corregir}).
   \item Siga el avance comparando el logro por carácter a lo largo del semestre.
 \end{pasos}

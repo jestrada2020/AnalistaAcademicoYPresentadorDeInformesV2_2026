@@ -272,6 +272,17 @@ body {
 .inf-tabla .inf-vacio { text-align: center; color: #9ca3af; font-style: italic; }
 .inf-consolidado { font-size: .72rem; }
 .inf-consolidado td { padding: .2rem .35rem; white-space: nowrap; }
+.inf-comp-reforzar { table-layout: fixed; font-size: .7rem; }
+.inf-comp-reforzar th:nth-child(1) { width: 4%; }
+.inf-comp-reforzar th:nth-child(2), .inf-comp-reforzar th:nth-child(3) { width: 20%; }
+.inf-comp-reforzar th:nth-child(4) { width: 32%; }
+.inf-comp-reforzar th:nth-child(5) { width: 12%; }
+.inf-comp-reforzar th:nth-child(6) { width: 12%; }
+.inf-comp-reforzar.sin-pc th:nth-child(1) { width: 5%; }
+.inf-comp-reforzar.sin-pc th:nth-child(2), .inf-comp-reforzar.sin-pc th:nth-child(3) { width: 25%; }
+.inf-comp-reforzar.sin-pc th:nth-child(4), .inf-comp-reforzar.sin-pc th:nth-child(5) { width: 22.5%; }
+.inf-comp-reforzar td { padding: .24rem .32rem; overflow-wrap: break-word; }
+.inf-comp-reforzar td:nth-child(2), .inf-comp-reforzar td:nth-child(3), .inf-comp-reforzar td:nth-child(4) { text-align: justify; hyphens: auto; line-height: 1.35; }
 .inf-grafico { margin-top: .8rem; max-width: 40rem; }
 .inf-leyenda { font-size: .72rem; color: #4b5563; display: flex; align-items: center; gap: .4rem; }
 .inf-leyenda .sw { display: inline-block; width: .7rem; height: .7rem; border-radius: .15rem; }
@@ -284,9 +295,14 @@ body {
 .inf-parrafo { white-space: pre-line; }
 .inf-mensaje { margin-top: 1rem; font-style: italic; color: #4b5563; }
 .inf-aviso { background: #fffbeb; color: #78350f; border-left: 3px solid #f59e0b; padding: .5rem .75rem; font-size: .78rem; margin: .5rem 0; }
+.inf-percepcion { background: #faf5ff; border-left: 3px solid #9333ea; padding: .35rem .75rem .55rem; margin: .6rem 0; }
 .inf-firmas { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.5rem; margin-top: 3rem; font-size: .78rem; }
 .inf-firmas .linea { border-top: 1px solid #6b7280; margin-bottom: .25rem; }
 .inf-firmas small { color: #6b7280; }
+.inf-inscripcion { margin-top: 1.5rem; padding-top: 1rem; border-top: 2px solid #c7d2fe; }
+.inf-inscripcion > h3 { color: #3730a3; font-size: 1rem; font-weight: 700; }
+.inf-detalle-grupo { color: #6b7280; font-size: .78rem; margin: .2rem 0 .6rem; }
+.inf-inscripcion .inf-pagina { border: 0; box-shadow: none; padding: 0; overflow: visible; }
 
 /* ---------------------------------------------------------------- Impresión: solo la vista previa de informes */
 @media print {
@@ -338,6 +354,11 @@ body {
 .comp-dim .crit { font-size: .76rem; color: #6b7280; margin-top: .1rem; }
 .comp-dim select { padding: .25rem .4rem; font-size: .8rem; }
 .comp-dim .manual { font-size: .68rem; color: #b45309; }
+.evidencia-pc { margin-top: .35rem; padding: .45rem .55rem; border-left: 3px solid #9333ea; background: #faf5ff; color: #4b5563; font-size: .75rem; line-height: 1.45; }
+.rubrica-pc { margin-top: .65rem; font-size: .78rem; color: #4b5563; }
+.rubrica-pc table { width: 100%; margin-top: .45rem; border-collapse: collapse; }
+.rubrica-pc th, .rubrica-pc td { padding: .35rem .45rem; border: 1px solid #e5e7eb; text-align: left; vertical-align: top; }
+.rubrica-pc th { background: #f3e8ff; color: #6b21a8; }
 @media (max-width: 640px) { .comp-dim { grid-template-columns: 2rem 1fr; } .comp-dim select { grid-column: 2; } }
 .inf-dims { display: grid; grid-template-columns: repeat(auto-fit, minmax(11rem, 1fr)); gap: .6rem; margin-bottom: .8rem; }
 .inf-dim { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: .5rem; padding: .55rem .7rem; }

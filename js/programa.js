@@ -11,6 +11,7 @@
     const CONFIG = global.CONFIG || require('./config.js');
     const U = global.Utilidades || require('./utilidades.js');
     const Analisis = global.Analisis || require('./analisis.js');
+    const Personas = global.Personas || require('./personas.js');
 
     const DIMS = Object.keys(CONFIG.DIMENSIONES);
     const APROBANDO = ['aprobado', 'asegurado', 'aprobando'];
@@ -170,6 +171,9 @@
             .map(x => ({ grupoId: x.grupo.id, grupo: x.grupo.nombre, r: x.r }));
 
         const modelo = { escala, avisos, grupos: filas, resumen, dimensiones, competencias, porCurso, evaluacionesCriticas, riesgo };
+        modelo.personas = Personas.unificarEstudiantes(modelo);
+        Object.assign(modelo.resumen, modelo.personas.resumen);
+        modelo.avisos.push(...modelo.personas.avisos);
         modelo.hallazgos = hallazgos(modelo);
         modelo.recomendaciones = recomendaciones(modelo);
         return modelo;

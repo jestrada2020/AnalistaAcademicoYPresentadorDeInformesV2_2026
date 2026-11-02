@@ -123,7 +123,7 @@ test('Análisis global del programa, informe y Excel', () => {
     assert.strictEqual(m.tablaGrupos.length, 3);
     assert.ok(Informes.htmlPrograma(m).includes('Comparativo de grupos'));
     const wb = Informes.libroExcelPrograma(prog, XLSX);
-    assert.deepStrictEqual(wb.SheetNames, ['Resumen', 'Grupos', 'Por curso', 'Competencias', 'Evaluaciones', 'Estudiantes', 'Clasificación']);
+    assert.deepStrictEqual(wb.SheetNames, ['Resumen', 'Grupos', 'Por curso', 'Competencias', 'Evaluaciones', 'Estudiantes', 'Personas unificadas', 'Estudiantes comunes', 'Conflictos identidad', 'Clasificación']);
     const est = XLSX.utils.sheet_to_json(wb.Sheets.Estudiantes, { header: 1 });
     assert.strictEqual(est.length, 61);
 });

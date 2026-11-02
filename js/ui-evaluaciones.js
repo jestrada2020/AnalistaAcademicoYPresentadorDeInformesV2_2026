@@ -34,6 +34,8 @@
         const evaluado = U.redondear(d.evaluaciones.filter(ev => ev.incluida !== false && Analisis.estaCalificada(d, ev)).reduce((s, ev) => s + (Number(ev.peso) || 0), 0), 2);
         const avisos = [];
         if (d.evaluaciones.length && Math.abs(total - 100) >= 0.01) avisos.push(`<div class="warning-box mb-2">Los porcentajes suman <b>${total}%</b>. Ajústelos para que sumen 100% (puede usar «Repartir porcentajes»). Mientras tanto, las notas se calculan sobre ${total}%.</div>`);
+        const sinPeso = d.evaluaciones.filter(ev => ev.incluida !== false && !(Number(ev.peso) > 0));
+        if (sinPeso.length) avisos.push(`<div class="warning-box mb-2">Con <b>0%</b> (no entran en la nota): ${sinPeso.map(ev => e(ev.nombre)).join(', ')}. Asígneles un porcentaje manualmente si deben contar.</div>`);
         if (d.evaluaciones.length) avisos.push(`<div class="info-box">Hasta ahora se ha evaluado el <b>${evaluado}%</b> del curso. Las evaluaciones sin notas en la planilla se consideran pendientes y sirven para calcular la nota que cada estudiante necesita.</div>`);
         $('avisosEvaluaciones').innerHTML = avisos.join('');
     }
@@ -41,7 +43,9 @@
     function render() {
         const d = Estado.obtener();
         const tbody = $('tablaEvaluaciones').querySelector('tbody');
+        const presetSeleccionado = $('presetPesos').value;
         $('presetPesos').innerHTML = CONFIG.PRESETS_PESOS.map(p => `<option value="${p.id}">${e(p.etiqueta)}</option>`).join('');
+        if (CONFIG.PRESETS_PESOS.some(p => p.id === presetSeleccionado)) $('presetPesos').value = presetSeleccionado;
         if (!d.evaluaciones.length) {
             tbody.innerHTML = '<tr><td colspan="10" class="vacio">Cargue una planilla de notas en la pestaña 1 para configurar las evaluaciones.</td></tr>';
             renderTotal();
@@ -134,7 +138,7 @@ Solo se modifican las evaluaciones con la misma columna (por ejemplo 1P, Q2).`, 
             <label class="comp-item ${seleccionComp.has(c.id) ? 'marcada' : ''}">
                 <input type="checkbox" value="${e(c.id)}" ${seleccionComp.has(c.id) ? 'checked' : ''}>
                 <span class="num">${c.numero}.</span>
-                <span><span>${e(c.texto)}</span> ${chipDim(c)}${c.criterio ? `<div class="crit">Criterio: ${e(c.criterio)}</div>` : ''}${usos[c.id] ? `<div class="usada">También en: ${e(usos[c.id].join(', '))}</div>` : ''}</span>
+                <span><span>${e(c.texto)}</span> ${chipDim(c)}${c.criterio ? `<div class="crit">Criterio: ${e(c.criterio)}</div>` : ''}${c.pensamientoCritico ? `<div class="evidencia-pc">${e(c.pensamientoCritico)}</div>` : ''}${usos[c.id] ? `<div class="usada">También en: ${e(usos[c.id].join(', '))}</div>` : ''}</span>
             </label>`).join('') || '<p class="text-gray-500 text-sm">No hay competencias que coincidan con la búsqueda.</p>') +
             (curso.notas?.length ? `<div class="notas-curso"><b>Notas del curso:</b><ul class="list-disc pl-5">${curso.notas.map(n => `<li>${e(n)}</li>`).join('')}</ul></div>` : '');
         $('compConteo').textContent = `${seleccionComp.size} competencia(s) marcada(s)`;
@@ -246,9 +250,19 @@ Solo se modifican las evaluaciones con la misma columna (por ejemplo 1P, Q2).`, 
         $('aplicarPresetBtn').addEventListener('click', () => {
             const d = Estado.obtener();
             if (!d.evaluaciones.length) return;
-            const pesos = Analisis.pesosSugeridos(d.evaluaciones, $('presetPesos').value);
+            const id = $('presetPesos').value;
+            const pesos = Analisis.pesosSugeridos(d.evaluaciones, id);
             d.evaluaciones.forEach(ev => { ev.peso = pesos[ev.clave] || 0; });
             Estado.confirmar({ origen: 'evaluaciones' });
+
+            const incluidas = d.evaluaciones.filter(ev => ev.incluida !== false);
+            const sumar = tipos => U.redondear(incluidas.filter(ev => tipos.includes(ev.tipo)).reduce((s, ev) => s + (Number(ev.peso) || 0), 0), 2);
+            const otras = incluidas.filter(ev => !['parcial', 'final', 'quiz'].includes(ev.tipo));
+            const total = U.redondear(incluidas.reduce((s, ev) => s + (Number(ev.peso) || 0), 0), 2);
+            const partes = [`Parciales ${sumar(['parcial', 'final'])}%`, `Quices ${sumar(['quiz'])}%`];
+            if (otras.length) partes.push(`Otras evaluaciones ${U.redondear(otras.reduce((s, ev) => s + (Number(ev.peso) || 0), 0), 2)}% (${otras.map(ev => ev.nombre).join(', ')})`);
+            const etiqueta = CONFIG.PRESETS_PESOS.find(p => p.id === id)?.etiqueta || 'Reparto personalizado';
+            mostrarNotificacion(`Porcentajes aplicados: ${etiqueta}`, `${partes.join(' · ')}. Total: ${total}%.`, 'success', 8000);
         });
         $('distribuirCompBtn').addEventListener('click', distribuir);
         $('sugerirTodosBtn').addEventListener('click', sugerirTodos);

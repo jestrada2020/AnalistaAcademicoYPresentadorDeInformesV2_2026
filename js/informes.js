@@ -36,6 +36,91 @@
         return Object.entries(perfil).sort((a, b) => b[1] - a[1]).map(([k, w]) => `${CONFIG.DIMENSIONES[k].etiqueta} ${U.redondear(w * 100, 0)}%`).join(' · ');
     }
 
+    function presentacionEstudiante(nombre, documento, formato = 'nombre-documento') {
+        const id = documento || 'Sin documento';
+        if (formato === 'nombre') return { nombre, incluirDocumento: false };
+        if (formato === 'documento') return { nombre: `ID / C.C. ${id}`, incluirDocumento: false };
+        return { nombre, incluirDocumento: true };
+    }
+
+    function accionDesdeEvidencia(texto) {
+        return String(texto || '')
+            .replace(/^Evidencia de presencia:\s*/i, '')
+            .replace(/^observa y describe/i, 'observar y describir')
+            .replace(/^Reflexiona/, 'reflexionar')
+            .replace(/^Compara/, 'comparar')
+            .replace(/\. Reflexiona/g, '. Reflexionar')
+            .replace(/\. Compara/g, '. Comparar')
+            .replace(/\. Contrasta su razonamiento/g, '. Contrastar su razonamiento')
+            .replace(/\. Registra por escrito/g, '. Registrar por escrito')
+            .replace(/; después lo dialoga/g, '; después dialogarlo');
+    }
+
+    /** Adapta la evidencia al resultado: no presentada, desempeño muy incipiente o limitado. */
+    function evidenciaCriticaParaResultado(datos, comp, evaluaciones, r) {
+        const detalles = (evaluaciones || []).map(nombre => r.detalle.find(d => d.nombre === nombre)).filter(Boolean);
+        const resumen = detalles.length ? detalles.map(d => `${d.nombre}${d.nota === null || d.nota === undefined ? ', sin presentar' : `, nota ${f2(datos, d.nota)}`}`).join(' · ') : (evaluaciones || []).join(', ');
+        const sinPresentar = detalles.some(d => d.nota === null || d.nota === undefined);
+        const maxima = datos.escala?.maxima ?? CONFIG.ESCALA_POR_DEFECTO.maxima;
+        const aprobatoria = datos.escala?.aprobatoria ?? CONFIG.ESCALA_POR_DEFECTO.aprobatoria;
+        const muyBaja = detalles.some(d => d.nota !== null && d.nota !== undefined && d.nota < maxima * 0.4);
+        const perdida = detalles.some(d => d.nota !== null && d.nota !== undefined && d.nota < aprobatoria - 1e-9);
+        let nivel;
+        let explicacion;
+        if (sinPresentar || !detalles.length) {
+            nivel = 'Evidencia insuficiente de pensamiento crítico';
+            explicacion = 'Al no contar con una actuación evaluada, todavía no puede demostrar con seguridad y dominio lo aprendido.';
+        } else if (muyBaja) {
+            nivel = 'Evidencia muy incipiente de pensamiento crítico';
+            explicacion = 'El resultado está muy por debajo de la aprobatoria y muestra dificultades para observar, reflexionar y explicar con seguridad y dominio lo aprendido.';
+        } else if (perdida) {
+            nivel = 'Evidencia limitada de pensamiento crítico';
+            explicacion = 'El resultado está por debajo de la aprobatoria y muestra que aún necesita fortalecer la observación, la reflexión y la explicación segura de lo aprendido.';
+        } else {
+            nivel = 'Evidencia en desarrollo de pensamiento crítico';
+            explicacion = 'El resultado permite continuar fortaleciendo la observación, la reflexión y la comunicación argumentada de lo aprendido.';
+        }
+        const base = accionDesdeEvidencia(comp.pensamientoCritico) || 'observar una situación real relacionada con la evaluación, registrar por escrito supuestos, decisiones y dudas, y conversar sobre ellos con seguridad y dominio en entornos sociales y académicos.';
+        const textoCriterio = String(comp.criterio || '').replace(/[.]\s*$/, '');
+        const criterio = textoCriterio ? ` Es especialmente necesario fortalecer el criterio «${textoCriterio}».` : '';
+        return `${nivel} (${resumen}): ${explicacion}${criterio} Para mejorar: ${base}`;
+    }
+
+    /** Lectura formativa del carácter crítico; no asigna la rúbrica de evidencia a partir de una nota. */
+    function percepcionPensamientoCritico(datos, r, grupo) {
+        const tipo = datos.informe?.percepcionCritica || 'no';
+        if (tipo === 'no') return null;
+        const nota = r.dimensiones?.critico ?? null;
+        const media = grupo?.dimensiones?.critico?.media ?? null;
+        const nivel = Analisis.nivelDe(datos, nota);
+        let texto;
+        if (nota === null) {
+            texto = 'No hay evaluaciones calificadas con perfil de pensamiento crítico para este estudiante. La lectura se limita a proponer evidencias para futuras actividades.';
+        } else if (tipo === 'general') {
+            texto = `En pensamiento crítico registra ${f2(datos, nota)}${nivel ? ` (${nivel.nombre.toLowerCase()})` : ''}. Esta lectura general describe su desempeño actual y no reemplaza la observación docente de la evidencia.`;
+        } else {
+            texto = `En las evaluaciones con perfil de pensamiento crítico registra ${f2(datos, nota)}${media !== null ? `, frente a una media de ${f2(datos, media)} en el grupo` : ''}. Se recomienda observar y dialogar las siguientes evidencias de forma concreta, sin convertir esta nota en una puntuación automática de la rúbrica.`;
+        }
+        if (tipo === 'general') return { tipo, texto, evidencias: [] };
+
+        const perfiles = grupo?.perfiles || Analisis.perfilesEvaluaciones(datos);
+        const indice = Analisis.indiceCompetencias(datos);
+        const criticos = Analisis.competenciasAReforzar(datos, r).filter(x => Analisis.dimensionDe(x.competencia) === 'critico');
+        const competencias = new Map(criticos.map(x => [x.competencia.id, { competencia: x.competencia, evaluaciones: [...x.evaluaciones] }]));
+        (datos.evaluaciones || []).filter(ev => (perfiles[ev.clave]?.critico || 0) > 0).forEach(ev => {
+            (ev.competencias || []).forEach(id => {
+                const comp = indice.get(id);
+                if (Analisis.dimensionDe(comp) !== 'critico') return;
+                if (!competencias.has(id)) competencias.set(id, { competencia: comp, evaluaciones: [] });
+                const actual = competencias.get(id);
+                if (!actual.evaluaciones.includes(ev.nombre)) actual.evaluaciones.push(ev.nombre);
+            });
+        });
+        const evidencias = [...competencias.values()].slice(0, 3).map(x => evidenciaCriticaParaResultado(datos, x.competencia, x.evaluaciones, r));
+        if (!evidencias.length) evidencias.push('Observar una situación real relacionada con la evaluación, registrar por escrito supuestos, decisiones y dudas, y conversar sobre ellos con seguridad y dominio en entornos sociales y académicos.');
+        return { tipo, texto, evidencias };
+    }
+
     /**
      * Modelo del informe individual de un estudiante.
      * @param {object} datos Estado.
@@ -48,7 +133,8 @@
         const est = CONFIG.ESTADOS[r.estado];
         const mediaDe = clave => grupo?.porEvaluacion.find(p => p.clave === clave)?.media ?? null;
 
-        const datosEst = [['Documento', r.id]];
+        const presentacion = presentacionEstudiante(r.nombre, r.estudiante.documento || r.id, op.formatoEstudiante);
+        const datosEst = presentacion.incluirDocumento ? [['Documento', r.estudiante.documento || r.id]] : [];
         if (op.incluirDatosArchivo !== false) {
             (datos.columnasInfo || []).forEach(c => {
                 const v = r.estudiante.info?.[c.clave];
@@ -86,11 +172,20 @@
         });
 
         const reforzar = Analisis.competenciasAReforzar(datos, r);
-        const competencias = reforzar.map(x => ({ numero: x.competencia.numero, texto: x.competencia.texto, criterio: x.competencia.criterio, curso: x.competencia.curso, evaluaciones: x.evaluaciones.join(', ') }));
+        const tipoEvaluacion = nombre => datos.evaluaciones.find(ev => ev.nombre === nombre)?.tipo || 'otro';
+        const competencias = reforzar.map(x => ({
+            numero: x.competencia.numero,
+            texto: x.competencia.texto,
+            criterio: x.competencia.criterio,
+            pensamientoCritico: evidenciaCriticaParaResultado(datos, x.competencia, x.evaluaciones, r),
+            curso: x.competencia.curso,
+            evaluaciones: x.evaluaciones.join(', '),
+            tipos: [...new Set(x.evaluaciones.map(tipoEvaluacion))].map(tipo => CONFIG.TIPOS_EVALUACION[tipo] || tipo).join(', ')
+        }));
         // Competencias escritas directamente en la planilla para este estudiante
         (datos.columnasTexto || []).filter(c => c.rol === 'competencias').forEach(c => {
             const v = r.estudiante.extras?.[c.clave];
-            if (v) U.lineas(v).forEach(t => competencias.push({ numero: '', texto: t, criterio: '', curso: '', evaluaciones: 'Registrada en la planilla' }));
+            if (v) U.lineas(v).forEach(t => competencias.push({ numero: '', texto: t, criterio: '', pensamientoCritico: evidenciaCriticaParaResultado(datos, { texto: t, criterio: '', pensamientoCritico: '' }, ['Registrada en la planilla'], r), curso: '', evaluaciones: 'Registrada en la planilla', tipos: 'No especificado' }));
         });
 
         // Para que el informe sea legible se muestran primero las competencias comprometidas en más evaluaciones.
@@ -120,12 +215,15 @@
         return {
             tipo: 'individual',
             encabezado: encabezado(datos, 'Informe de desempeño académico por competencias'),
-            estudiante: { nombre: r.nombre, datos: datosEst },
+            estudiante: { nombre: presentacion.nombre, datos: datosEst },
             indicadores,
             evaluaciones,
             grafico,
             escala,
             dimensiones,
+            incluirPensamientoCritico: op.incluirPensamientoCritico !== false,
+            incluirRecursos: op.incluirRecursos !== false,
+            percepcionCritica: percepcionPensamientoCritico(datos, r, grupo),
             competencias: op.incluirCompetencias !== false ? competenciasMostradas : [],
             competenciasOmitidas: op.incluirCompetencias !== false ? totalCompetencias - competenciasMostradas.length : 0,
             recursos: op.incluirRecursos !== false ? Analisis.recursosRecomendados(datos, r, reforzar) : {},
@@ -133,6 +231,65 @@
             observacion: datos.observaciones?.[r.id] || '',
             mensaje: op.mensaje || '',
             firmas: op.incluirFirmas !== false ? [[datos.curso?.docente || 'Docente', 'Docente'], [r.nombre, 'Estudiante'], ['', 'Acudiente / padre de familia']] : []
+        };
+    }
+
+    /**
+     * Modelo unificado de una persona con matrículas en uno o varios grupos.
+     * Cada inscripción conserva sus evaluaciones, ponderaciones y observaciones; no se combinan notas por nombre de columna.
+     */
+    function modeloUnificado(persona) {
+        const registros = persona.registros.map(x => ({
+            grupo: x.grupo,
+            archivo: x.archivo,
+            asignatura: x.datos.curso.asignatura || '',
+            docente: x.datos.curso.docente || '',
+            modelo: modeloIndividual(x.datos, x.r, x.g)
+        }));
+        const primero = registros[0]?.modelo;
+        const comun = (campo) => {
+            const valores = new Set(persona.registros.map(x => x.datos.curso[campo]).filter(Boolean));
+            return valores.size === 1 ? [...valores][0] : '';
+        };
+        const escala = primero?.escala || CONFIG.ESCALA_POR_DEFECTO;
+        const fmt = v => U.formatoNota(v, escala.decimales ?? 2);
+        const avisos = ['El promedio unificado es una media descriptiva de los promedios actuales de cada grupo; no es una nota final combinada. Las evaluaciones y los porcentajes se consultan por separado en cada grupo.'];
+        if (persona.nombres.length > 1) avisos.push(`Variantes del nombre conservadas como la misma identidad por coincidencia normalizada: ${persona.nombres.join(' · ')}.`);
+        if (persona.metodo === 'nombre') avisos.push('La unificación se realizó por nombre exacto normalizado porque no hay documento. Verifique que no se trate de homónimos.');
+        const presentacion = presentacionEstudiante(persona.nombre, persona.documento, persona.registros[0]?.datos.informe?.formatoEstudiante);
+
+        return {
+            tipo: 'unificado',
+            encabezado: {
+                institucion: comun('institucion'),
+                titulo: 'Informe académico unificado por estudiante',
+                lineas: [
+                    ['Programa', comun('programa')], ['Periodo', comun('periodo')],
+                    ['Grupos', String(persona.grupos.size)], ['Fecha', U.fechaLarga(U.fechaISO())]
+                ].filter(([, v]) => v)
+            },
+            estudiante: {
+                nombre: presentacion.nombre,
+                datos: [
+                    ...(presentacion.incluirDocumento ? [['Documento', persona.documento || 'Sin documento']] : []),
+                    ['Unificación', persona.metodo === 'documento-nombre' ? 'Documento y nombre normalizados' : 'Nombre exacto normalizado'],
+                    ['Archivos', String(new Set(persona.registros.map(x => x.archivo).filter(Boolean)).size)]
+                ]
+            },
+            indicadores: [
+                { etiqueta: 'Grupos', valor: String(persona.grupos.size), detalle: `${persona.registros.length} matrícula(s)` },
+                { etiqueta: 'Promedio descriptivo', valor: fmt(persona.promedio), detalle: 'entre los promedios de cada grupo' },
+                { etiqueta: 'Van aprobando', valor: String(persona.aprobando), detalle: `de ${persona.registros.length} matrícula(s)`, color: '#047857' },
+                { etiqueta: 'En riesgo o perdiendo', valor: String(persona.enRiesgo), detalle: 'matrículas que requieren atención', color: '#b91c1c' },
+                { etiqueta: 'Sin calificaciones', valor: String(persona.sinDatos), detalle: 'matrículas sin notas' }
+            ],
+            registros,
+            avisos,
+            escala,
+            mensaje: persona.registros[0]?.datos.informe?.mensaje || '',
+            firmas: persona.registros[0]?.datos.informe?.incluirFirmas !== false
+                ? [[registros.map(x => x.docente).filter(Boolean).join(' · ') || 'Docentes', 'Docentes'], [persona.nombre, 'Estudiante'], ['', 'Acudiente / padre de familia']]
+                : []
         };
     }
 
@@ -235,7 +392,7 @@
 
         const indicadores = [
             { etiqueta: 'Grupos', valor: String(s.grupos), detalle: `${new Set(prog.grupos.map(g => g.docente).filter(Boolean)).size || '—'} docente(s)` },
-            { etiqueta: 'Estudiantes', valor: String(s.estudiantes), detalle: `${s.sinDatos} sin notas` },
+            { etiqueta: 'Matrículas', valor: String(s.matriculas), detalle: `${s.personas} personas · ${s.comunes} comunes · ${s.sinDatos} sin notas` },
             { etiqueta: 'Promedio del programa', valor: fm(s.media), detalle: `mediana ${fm(s.mediana)}` },
             { etiqueta: 'Van aprobando', valor: String(s.aprobando), detalle: `${pc(s.estudiantes ? (s.aprobando / s.estudiantes) * 100 : null)} del total`, color: '#047857' },
             { etiqueta: 'En riesgo o perdiendo', valor: String(s.riesgo + s.perdidos), detalle: `${s.perdidos} ya no alcanzan`, color: '#b91c1c' },
@@ -389,10 +546,12 @@
             <div><h5>${e(CONFIG.TIPOS_RECURSO[t])}</h5><ul>${recursos[t].map(r => `<li>${r.url ? `<a href="${e(r.url)}" target="_blank" rel="noopener">${e(r.titulo)}</a>` : e(r.titulo)}</li>`).join('')}</ul></div>`).join('')}</div>`;
     }
 
-    function htmlIndividual(m) {
-        let h = `<article class="inf-pagina">${htmlEncabezado(m.encabezado)}`;
-        h += `<div class="inf-estudiante"><div class="inf-nombre">${e(m.estudiante.nombre)}</div>
-            <div class="inf-lineas">${m.estudiante.datos.map(([k, v]) => `<span><b>${e(k)}:</b> ${e(v)}</span>`).join('')}</div></div>`;
+    function htmlIndividual(m, opciones = {}) {
+        let h = `<article class="inf-pagina">${opciones.sinEncabezado ? '' : htmlEncabezado(m.encabezado)}`;
+        if (!opciones.sinDatosEstudiante) {
+            h += `<div class="inf-estudiante"><div class="inf-nombre">${e(m.estudiante.nombre)}</div>
+                <div class="inf-lineas">${m.estudiante.datos.map(([k, v]) => `<span><b>${e(k)}:</b> ${e(v)}</span>`).join('')}</div></div>`;
+        }
         h += htmlIndicadores(m.indicadores);
         h += `<h4>Resultados por evaluación</h4>`;
         h += htmlTabla(['Evaluación', 'Tipo', 'Fecha', 'Peso', 'Nota', 'Aporte', 'Media grupo', 'Resultado'],
@@ -404,15 +563,39 @@
             h += htmlTabla(['Carácter', 'Qué evalúa', 'Nota', 'Media grupo', 'Nivel', 'Lectura'], m.dimensiones.map(x => [x.etiqueta, x.descripcion, x.nota, x.media, x.nivel, x.lectura]),
                 { estilo: (c, i) => i === 5 ? `font-weight:600;color:${c === 'Por fortalecer' ? '#b91c1c' : '#047857'}` : i === 0 ? 'font-weight:600' : '' });
         }
+        if (m.percepcionCritica) {
+            h += `<div class="inf-percepcion"><h4>${m.percepcionCritica.tipo === 'general' ? 'Percepción general del pensamiento crítico' : 'Percepción concreta del pensamiento crítico'}</h4>
+                <p class="inf-parrafo">${e(m.percepcionCritica.texto)}</p>
+                ${m.percepcionCritica.evidencias.length ? `<ul class="inf-lista">${m.percepcionCritica.evidencias.map(x => `<li>${e(x)}</li>`).join('')}</ul>` : ''}</div>`;
+        }
         if (m.competencias.length) {
+            const cabeceras = ['N.º', 'Competencia', 'Criterio de evaluación', ...(m.incluirPensamientoCritico ? ['Pensamiento crítico'] : []), 'Evaluación', 'Tipo'];
+            const filas = m.competencias.map(c => [c.numero, c.texto, c.criterio, ...(m.incluirPensamientoCritico ? [c.pensamientoCritico || '—'] : []), c.evaluaciones, c.tipos]);
             h += `<h4>Competencias a reforzar</h4>`;
-            h += htmlTabla(['N.º', 'Competencia', 'Criterio de evaluación', 'Evaluación'], m.competencias.map(c => [c.numero, c.texto, c.criterio, c.evaluaciones]), { clase: 'inf-comp' });
+            h += htmlTabla(cabeceras, filas, { clase: `inf-comp inf-comp-reforzar${m.incluirPensamientoCritico ? '' : ' sin-pc'}` });
             if (m.competenciasOmitidas) h += `<p class="text-xs text-gray-500 mt-1">Se muestran ${m.competencias.length} de ${m.competencias.length + m.competenciasOmitidas} competencias por reforzar (las comprometidas en más evaluaciones). El listado completo está en la hoja «Plan por estudiante» del Excel consolidado.</p>`;
         }
         const recursos = htmlRecursos(m.recursos);
         if (recursos) h += `<h4>Recursos recomendados para el plan de mejoramiento</h4>${recursos}`;
+        else if (m.incluirRecursos) h += `<h4>Recursos recomendados para el plan de mejoramiento</h4><div class="inf-aviso">No hay recursos asociados a las evaluaciones perdidas o no presentadas. Agregue recursos en la pestaña 2 o cargue el catálogo de competencias actualizado en la pestaña 1.</div>`;
         if (m.recomendaciones.length) h += `<h4>Recomendaciones</h4><ul class="inf-lista">${m.recomendaciones.map(r => `<li>${e(r)}</li>`).join('')}</ul>`;
         if (m.observacion) h += `<h4>Observaciones del docente</h4><p class="inf-parrafo">${e(m.observacion)}</p>`;
+        if (m.mensaje && !opciones.sinMensaje) h += `<p class="inf-parrafo inf-mensaje">${e(m.mensaje)}</p>`;
+        if (m.firmas.length && !opciones.sinFirmas) h += `<div class="inf-firmas">${m.firmas.map(([n, c]) => `<div><div class="linea"></div><div>${e(n)}</div><small>${e(c)}</small></div>`).join('')}</div>`;
+        return `${h}</article>`;
+    }
+
+    function htmlUnificado(m) {
+        let h = `<article class="inf-pagina inf-unificado">${htmlEncabezado(m.encabezado)}
+            <div class="inf-estudiante"><div class="inf-nombre">${e(m.estudiante.nombre)}</div>
+            <div class="inf-lineas">${m.estudiante.datos.map(([k, v]) => `<span><b>${e(k)}:</b> ${e(v)}</span>`).join('')}</div></div>
+            ${htmlIndicadores(m.indicadores)}
+            <div class="inf-aviso">${m.avisos.map(a => e(a)).join('<br>')}</div>`;
+        m.registros.forEach((r, i) => {
+            h += `<section class="inf-inscripcion"><h3>Matrícula ${i + 1}: ${e(r.grupo)}</h3>
+                <p class="inf-detalle-grupo">${e([r.asignatura, r.docente, r.archivo].filter(Boolean).join(' · '))}</p>
+                ${htmlIndividual(r.modelo, { sinEncabezado: true, sinDatosEstudiante: true, sinFirmas: true, sinMensaje: true })}</section>`;
+        });
         if (m.mensaje) h += `<p class="inf-parrafo inf-mensaje">${e(m.mensaje)}</p>`;
         if (m.firmas.length) h += `<div class="inf-firmas">${m.firmas.map(([n, c]) => `<div><div class="linea"></div><div>${e(n)}</div><small>${e(c)}</small></div>`).join('')}</div>`;
         return `${h}</article>`;
@@ -619,17 +802,18 @@
         doc.setTextColor(17, 24, 39);
     }
 
-    function pdfIndividual(l, m) {
+    function pdfIndividual(l, m, opciones = {}) {
         const { doc, M } = l;
-        pdfEncabezado(l, m.encabezado);
-        // Datos del estudiante
-        doc.setFont('helvetica', 'bold'); doc.setFontSize(13); doc.setTextColor(17, 24, 39);
-        doc.text(txt(m.estudiante.nombre), M, l.y + 3);
-        l.y += 7.5;
-        doc.setFontSize(8.5);
-        const datosTxt = m.estudiante.datos.map(([k, v]) => `${k}: ${v}`).join('   |   ');
-        l.parrafo(datosTxt, { tam: 8.5 });
-        l.y += 1;
+        if (!opciones.sinEncabezado) pdfEncabezado(l, m.encabezado);
+        if (!opciones.sinDatosEstudiante) {
+            doc.setFont('helvetica', 'bold'); doc.setFontSize(13); doc.setTextColor(17, 24, 39);
+            doc.text(txt(m.estudiante.nombre), M, l.y + 3);
+            l.y += 7.5;
+            doc.setFontSize(8.5);
+            const datosTxt = m.estudiante.datos.map(([k, v]) => `${k}: ${v}`).join('   |   ');
+            l.parrafo(datosTxt, { tam: 8.5 });
+            l.y += 1;
+        }
         pdfIndicadores(l, m.indicadores);
 
         l.titulo('Resultados por evaluación');
@@ -652,11 +836,33 @@
                 didParseCell: d => { if (d.section === 'body' && d.column.index === 5) { d.cell.styles.fontStyle = 'bold'; d.cell.styles.textColor = d.cell.raw === 'Por fortalecer' ? [185, 28, 28] : [4, 120, 87]; } }
             });
         }
+        if (m.percepcionCritica) {
+            l.titulo(m.percepcionCritica.tipo === 'general' ? 'Percepción general del pensamiento crítico' : 'Percepción concreta del pensamiento crítico');
+            l.parrafo(m.percepcionCritica.texto);
+            m.percepcionCritica.evidencias.forEach(x => l.parrafo(x, { vineta: true, tam: 8.5 }));
+        }
         if (m.competencias.length) {
+            const cabeceras = ['N.º', 'Competencia', 'Criterio de evaluación', ...(m.incluirPensamientoCritico ? ['Pensamiento crítico'] : []), 'Evaluación', 'Tipo'];
+            const filas = m.competencias.map(c => [String(c.numero), c.texto, c.criterio, ...(m.incluirPensamientoCritico ? [c.pensamientoCritico || '—'] : []), c.evaluaciones, c.tipos]);
+            const columnStyles = m.incluirPensamientoCritico ? {
+                0: { cellWidth: 7, halign: 'center' },
+                1: { cellWidth: l.ancho * 0.18, halign: 'justify' },
+                2: { cellWidth: l.ancho * 0.18, halign: 'justify' },
+                3: { cellWidth: l.ancho * 0.34, halign: 'justify' },
+                4: { cellWidth: l.ancho * 0.14 },
+                5: { cellWidth: l.ancho * 0.12 }
+            } : {
+                0: { cellWidth: 7, halign: 'center' },
+                1: { cellWidth: l.ancho * 0.24, halign: 'justify' },
+                2: { cellWidth: l.ancho * 0.24, halign: 'justify' },
+                3: { cellWidth: l.ancho * 0.24 },
+                4: { cellWidth: l.ancho * 0.15 }
+            };
             l.titulo('Competencias a reforzar');
-            l.tabla(['N.º', 'Competencia', 'Criterio de evaluación', 'Evaluación'], m.competencias.map(c => [String(c.numero), c.texto, c.criterio, c.evaluaciones]), {
-                styles: { fontSize: 7.5, cellPadding: 1.2, overflow: 'linebreak' },
-                columnStyles: { 0: { cellWidth: 9, halign: 'center' }, 1: { cellWidth: l.ancho * 0.42 }, 3: { cellWidth: 26 } }
+            l.tabla(cabeceras, filas, {
+                styles: { fontSize: 6.5, cellPadding: 0.8, overflow: 'linebreak' },
+                headStyles: { fontSize: 7 },
+                columnStyles
             });
             if (m.competenciasOmitidas) l.parrafo(`Se muestran ${m.competencias.length} de ${m.competencias.length + m.competenciasOmitidas} competencias por reforzar (las comprometidas en más evaluaciones). El listado completo está en la hoja «Plan por estudiante» del Excel consolidado.`, { tam: 7.5, color: [107, 114, 128] });
         }
@@ -679,14 +885,17 @@
                 });
                 l.y += 1.5;
             });
+        } else if (m.incluirRecursos) {
+            l.titulo('Recursos recomendados para el plan de mejoramiento');
+            l.parrafo('No hay recursos asociados a las evaluaciones perdidas o no presentadas. Agregue recursos en la pestaña 2 o cargue el catálogo de competencias actualizado en la pestaña 1.', { color: [146, 64, 14] });
         }
         if (m.recomendaciones.length) {
             l.titulo('Recomendaciones');
             m.recomendaciones.forEach(r => l.parrafo(r, { vineta: true }));
         }
         if (m.observacion) { l.titulo('Observaciones del docente'); l.parrafo(m.observacion); }
-        if (m.mensaje) { l.y += 2; l.parrafo(m.mensaje, { estilo: 'italic' }); }
-        if (m.firmas.length) {
+        if (m.mensaje && !opciones.sinMensaje) { l.y += 2; l.parrafo(m.mensaje, { estilo: 'italic' }); }
+        if (m.firmas.length && !opciones.sinFirmas) {
             l.espacio(26);
             l.y += 16;
             const w = (l.ancho - 12) / m.firmas.length;
@@ -699,6 +908,37 @@
                 doc.text(txt(cargo), x, l.y + (nombre ? 7.5 : 4));
             });
             l.y += 10;
+        }
+    }
+
+    function pdfUnificado(l, m) {
+        const { doc, M } = l;
+        pdfEncabezado(l, m.encabezado);
+        doc.setFont('helvetica', 'bold'); doc.setFontSize(13); doc.setTextColor(17, 24, 39);
+        doc.text(txt(m.estudiante.nombre), M, l.y + 3);
+        l.y += 7.5;
+        l.parrafo(m.estudiante.datos.map(([k, v]) => `${k}: ${v}`).join('   |   '), { tam: 8.5 });
+        pdfIndicadores(l, m.indicadores);
+        m.avisos.forEach(a => l.parrafo(a, { tam: 8, color: [146, 64, 14] }));
+        m.registros.forEach((r, i) => {
+            l.espacio(60);
+            l.titulo(`Matrícula ${i + 1}: ${r.grupo}`);
+            l.parrafo([r.asignatura, r.docente, r.archivo].filter(Boolean).join(' · '), { tam: 8 });
+            pdfIndividual(l, r.modelo, { sinEncabezado: true, sinDatosEstudiante: true, sinFirmas: true, sinMensaje: true });
+        });
+        if (m.mensaje) l.parrafo(m.mensaje, { estilo: 'italic' });
+        if (m.firmas.length) {
+            l.espacio(26);
+            l.y += 16;
+            const w = (l.ancho - 12) / m.firmas.length;
+            m.firmas.forEach(([nombre, cargo], i) => {
+                const x = M + i * (w + 6);
+                doc.setDrawColor(107, 114, 128); doc.setLineWidth(0.25); doc.line(x, l.y, x + w, l.y);
+                doc.setFont('helvetica', 'bold'); doc.setFontSize(8); doc.setTextColor(17, 24, 39);
+                if (nombre) doc.text(doc.splitTextToSize(txt(nombre), w)[0], x, l.y + 4);
+                doc.setFont('helvetica', 'normal'); doc.setFontSize(7); doc.setTextColor(107, 114, 128);
+                doc.text(txt(cargo), x, l.y + (nombre ? 7.5 : 4));
+            });
         }
     }
 
@@ -883,7 +1123,10 @@
         modelos.forEach((m, i) => {
             if (i > 0) doc.addPage();
             const l = Lienzo(doc);
-            if (m.tipo === 'grupal') pdfGrupal(l, m); else if (m.tipo === 'programa') pdfPrograma(l, m); else pdfIndividual(l, m);
+            if (m.tipo === 'grupal') pdfGrupal(l, m);
+            else if (m.tipo === 'programa') pdfPrograma(l, m);
+            else if (m.tipo === 'unificado') pdfUnificado(l, m);
+            else pdfIndividual(l, m);
         });
         piePaginas(doc, opciones.pie || `Generado con Analista Académico · ${U.fechaLarga(U.fechaISO())}`);
         doc.setProperties({ title: opciones.titulo || 'Informe académico', creator: 'Analista Académico' });
@@ -947,16 +1190,17 @@
         }
 
         agregar('Plan por estudiante', [
-            ['Documento', 'Estudiante', 'Estado', 'Competencias a reforzar', 'Recursos recomendados', 'Recomendaciones'],
+            ['Documento', 'Estudiante', 'Estado', 'Competencias a reforzar', 'Evidencia de pensamiento crítico', 'Recursos recomendados', 'Recomendaciones'],
             ...grupo.resultados.map(r => {
                 const reforzar = Analisis.competenciasAReforzar(datos, r);
                 const recursos = Analisis.recursosRecomendados(datos, r, reforzar);
                 return [r.id, r.nombre, CONFIG.ESTADOS[r.estado].etiqueta,
                     reforzar.map(x => `${x.competencia.numero}. ${x.competencia.texto}`).join('\n'),
+                    reforzar.filter(x => x.competencia.pensamientoCritico).map(x => `${x.competencia.numero}. ${x.competencia.pensamientoCritico}`).join('\n'),
                     Object.entries(recursos).map(([t, l]) => `${CONFIG.TIPOS_RECURSO[t]}:\n${l.map(x => `- ${x.titulo}${x.url ? ` (${x.url})` : ''}`).join('\n')}`).join('\n'),
                     Analisis.recomendaciones(datos, r).join('\n')];
             })
-        ], [14, 34, 16, 70, 70, 70]);
+        ], [14, 34, 16, 70, 90, 70, 70]);
 
         agregar('Configuración', [
             ['Evaluación', 'Clave', 'Columna en el archivo', 'Tipo', 'Incluida', 'Peso (%)', 'Fecha', 'Carácter', 'Competencias asociadas'],
@@ -986,7 +1230,8 @@
         agregar('Resumen', [
             ['Informe global del programa', U.fechaLarga(U.fechaISO())],
             [],
-            ['Grupos', s.grupos], ['Estudiantes', s.estudiantes], ['Con notas', s.conNotas],
+            ['Grupos', s.grupos], ['Matrículas', s.matriculas], ['Personas únicas', s.personas], ['Estudiantes comunes', s.comunes],
+            ['Conflictos de identidad', s.conflictos], ['Con notas', s.conNotas],
             ['Promedio del programa', r2(s.media)], ['Mediana', r2(s.mediana)], ['Desviación', r2(s.desviacion)],
             ['Van aprobando', s.aprobando], ['En riesgo', s.riesgo], ['Ya no alcanzan / reprobados', s.perdidos], ['Sin notas', s.sinDatos],
             ['Brecha entre grupos', s.brecha ? r2(s.brecha.valor) : ''],
@@ -1035,6 +1280,22 @@
                 ...dims.map(([k]) => r2(r.dimensiones?.[k])), r.perdidas.join(', '), r.faltantes.join(', '), r.tendencia || '']))
         ], [28, 14, 34, 10, 10, 12, 10, 18, 12, ...dims.map(() => 12), 18, 16, 10]);
 
+        const filasPersonas = personas => personas.map(p => [
+            p.documento || 'Sin documento', p.nombre, p.grupos.size, p.comun ? 'Sí' : 'No',
+            p.metodo === 'documento-nombre' ? 'Documento y nombre' : 'Solo nombre', r2(p.promedio),
+            p.registros.map(x => x.grupo).join('\n'),
+            p.registros.map(x => `${x.grupo}: ${x.r.promedio === null ? '—' : r2(x.r.promedio)}`).join('\n'),
+            p.registros.map(x => `${x.grupo}: ${CONFIG.ESTADOS[x.r.estado].etiqueta}`).join('\n')
+        ]);
+        const cabeceraPersonas = ['Documento', 'Estudiante', 'N.º de grupos', 'Común', 'Criterio de unificación', 'Promedio descriptivo', 'Grupos', 'Promedios por grupo', 'Estados por grupo'];
+        const anchosPersonas = [16, 34, 12, 10, 24, 20, 36, 42, 42];
+        agregar('Personas unificadas', [cabeceraPersonas, ...filasPersonas(prog.personas.personas)], anchosPersonas);
+        agregar('Estudiantes comunes', [cabeceraPersonas, ...filasPersonas(prog.personas.comunes)], anchosPersonas);
+        agregar('Conflictos identidad', [
+            ['Documento', 'Nombres y grupos que se mantuvieron separados'],
+            ...prog.personas.conflictos.map(c => [c.documento, c.variantes.map(v => `${v.nombre}: ${v.grupos.join(', ')}`).join('\n')])
+        ], [18, 100]);
+
         // Clasificación de las competencias de los cursos en uso (para revisarla o justificarla)
         const enUso = new Map();
         prog.grupos.forEach(g => {
@@ -1043,17 +1304,18 @@
         });
         if (enUso.size) {
             agregar('Clasificación', [
-                ['Curso', 'N.º', 'Competencia', 'Criterio', 'Carácter asignado', 'Clasificación automática', 'Corregida por el docente'],
-                ...[...enUso.values()].flatMap(c => c.competencias.map(x => [c.nombre, x.numero, x.texto, x.criterio,
+                ['Curso', 'N.º', 'Competencia', 'Criterio', 'Evidencia de pensamiento crítico', 'Carácter asignado', 'Clasificación automática', 'Corregida por el docente'],
+                ...[...enUso.values()].flatMap(c => c.competencias.map(x => [c.nombre, x.numero, x.texto, x.criterio, x.pensamientoCritico || '',
                     CONFIG.DIMENSIONES[Analisis.dimensionDe(x)]?.etiqueta || '', CONFIG.DIMENSIONES[x.dimension]?.etiqueta || '', x.dimensionManual ? 'Sí' : '']))
-            ], [24, 6, 60, 46, 18, 20, 12]);
+            ], [24, 6, 60, 46, 90, 18, 20, 12]);
         }
         return libro;
     }
 
     const Informes = {
-        modeloIndividual, modeloGrupal, modeloPrograma, htmlIndividual, htmlGrupal, htmlPrograma, svgBarras, svgBarrasAgrupadas,
-        generarPDF, libroExcel, libroExcelPrograma, describirPerfil, txt, ESTADO_EVALUACION
+        modeloIndividual, modeloUnificado, modeloGrupal, modeloPrograma, htmlIndividual, htmlUnificado, htmlGrupal, htmlPrograma,
+        svgBarras, svgBarrasAgrupadas, generarPDF, libroExcel, libroExcelPrograma, describirPerfil,
+        presentacionEstudiante, percepcionPensamientoCritico, txt, ESTADO_EVALUACION
     };
     global.Informes = Informes;
     if (typeof module !== 'undefined' && module.exports) module.exports = Informes;

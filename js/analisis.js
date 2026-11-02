@@ -48,10 +48,11 @@
             repartir(100, incluidas.length).forEach((p, i) => { pesos[incluidas[i].clave] = p; });
             return pesos;
         }
-        // Con otras evaluaciones (talleres, seguimientos) el porcentaje de los quices se comparte con ellas.
-        const grupoB = [...quices, ...otras];
+        // El preset reparte el 100% solo entre parciales y quices. Las demás evaluaciones quedan
+        // en 0% y se señalan en la interfaz para que el docente decida su peso manualmente.
         repartir(def.parciales, parciales.length).forEach((p, i) => { pesos[parciales[i].clave] = p; });
-        repartir(100 - def.parciales, grupoB.length).forEach((p, i) => { pesos[grupoB[i].clave] = p; });
+        repartir(100 - def.parciales, quices.length).forEach((p, i) => { pesos[quices[i].clave] = p; });
+        otras.forEach(ev => { pesos[ev.clave] = 0; });
         return pesos;
     }
 

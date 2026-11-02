@@ -66,7 +66,7 @@
                         <input type="file" id="archivoCompetencias" accept=".xlsx,.xls,.xlsm,.ods,.csv" class="sr-only">
                         <span class="dz-icono" aria-hidden="true">📚</span>
                         <span class="font-semibold">Seleccione o arrastre el Excel de competencias</span>
-                        <span class="text-xs text-gray-500">Una hoja por curso con las columnas «Competencias» y «Criterios de Evaluación». Es común a todos los grupos; cada competencia se clasifica como analítica, práctica o de pensamiento crítico.</span>
+                        <span class="text-xs text-gray-500">Una hoja por curso con «Competencias», «Criterios de Evaluación» y «Pensamiento Critico» (evidencia observable). Es común a todos los grupos; cada competencia se clasifica como analítica, práctica o de pensamiento crítico.</span>
                     </label>
                     <div id="cursoWrap" class="mt-3 hidden">
                         <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -254,16 +254,37 @@
                         <label class="check-pill"><input type="radio" name="tipoInforme" value="grupal"> <span>Grupal (coordinación)</span></label>
                         <label class="check-pill"><input type="radio" name="tipoInforme" value="programa"> <span>Programa: todos los grupos <b id="numGruposInforme"></b></span></label>
                     </fieldset>
+                    <fieldset class="space-y-2 mt-4">
+                        <legend class="form-label">Entre archivos y grupos</legend>
+                        <label class="check-pill"><input type="radio" name="tipoInforme" value="comunes"> <span>Unificado: estudiantes comunes <b id="numComunes">(0)</b></span></label>
+                        <label class="check-pill"><input type="radio" name="tipoInforme" value="unificados"> <span>Unificado: todas las personas <b id="numPersonasUnificadas">(0)</b></span></label>
+                        <label class="check-pill"><input type="radio" name="tipoInforme" value="grupos"> <span>Grupos: un informe por grupo <b id="numInformesGrupos">(0)</b></span></label>
+                    </fieldset>
                     <div class="grid grid-cols-2 gap-2 mt-4">
                         <div><label class="form-label-sm" for="tamanoHoja">Hoja</label>
                             <select id="tamanoHoja" class="form-input"><option value="letter">Carta</option><option value="legal">Oficio</option><option value="a4">A4</option></select></div>
                         <div><label class="form-label-sm" for="orientacion">Orientación</label>
                             <select id="orientacion" class="form-input"><option value="p">Vertical</option><option value="l">Horizontal</option></select></div>
                     </div>
+                    <div class="grid grid-cols-1 gap-3 mt-4">
+                        <div><label class="form-label-sm" for="formatoEstudiante">Identificación del estudiante</label>
+                            <select id="formatoEstudiante" class="form-input" data-informe-select="formatoEstudiante">
+                                <option value="nombre">Apellidos y nombres</option>
+                                <option value="nombre-documento">Apellidos y nombres + ID / C.C.</option>
+                                <option value="documento">Solo ID / C.C.</option>
+                            </select></div>
+                        <div><label class="form-label-sm" for="percepcionCritica">Percepción del pensamiento crítico</label>
+                            <select id="percepcionCritica" class="form-input" data-informe-select="percepcionCritica">
+                                <option value="no">No incluir</option>
+                                <option value="general">General y muy breve</option>
+                                <option value="concreta">Concreta, con evidencias</option>
+                            </select></div>
+                    </div>
                     <fieldset class="space-y-1 mt-4 text-sm">
                         <legend class="form-label">Incluir en el informe individual</legend>
                         <label class="flex items-center gap-2"><input type="checkbox" data-opcion="incluirDimensiones"> Desempeño analítico, práctico y crítico</label>
                         <label class="flex items-center gap-2"><input type="checkbox" data-opcion="incluirCompetencias"> Competencias a reforzar</label>
+                        <label class="flex items-center gap-2"><input type="checkbox" data-opcion="incluirPensamientoCritico"> Columna de pensamiento crítico</label>
                         <label class="flex items-center gap-2"><input type="checkbox" data-opcion="incluirRecursos"> Recursos recomendados</label>
                         <label class="flex items-center gap-2"><input type="checkbox" data-opcion="incluirRecomendaciones"> Recomendaciones automáticas</label>
                         <label class="flex items-center gap-2"><input type="checkbox" data-opcion="incluirDatosArchivo"> Otras columnas del archivo</label>
@@ -487,11 +508,14 @@
 
     <script src="js/config.js"></script>
     <script src="js/utilidades.js"></script>
+    <script src="js/personas.js"></script>
     <script src="js/analisis.js"></script>
+    <script src="js/recursos-canal.js"></script>
+    <script src="js/recursos.js"></script>
+    <script src="js/pensamiento-critico.js"></script>
     <script src="js/lectura.js"></script>
     <script src="js/estado.js"></script>
     <script src="js/programa.js"></script>
-    <script src="js/recursos.js"></script>
     <script src="js/informes.js"></script>
     <script src="js/datos-ejemplo.js"></script>
     <script src="js/ui-datos.js"></script>

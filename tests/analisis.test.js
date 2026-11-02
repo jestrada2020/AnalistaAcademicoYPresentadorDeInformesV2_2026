@@ -73,6 +73,22 @@ test('Pesos sugeridos: 80/20 y suma exacta de 100', () => {
     assert.strictEqual(Object.values(iguales).reduce((a, b) => a + b, 0), 100);
 });
 
+test('Los presets no comparten el porcentaje de los quices con talleres u otras evaluaciones', () => {
+    const d = DatosEjemplo.crearEstadoEjemplo();
+    const ochenta = Analisis.pesosSugeridos(d.evaluaciones, '80-20');
+    assert.deepStrictEqual(d.evaluaciones.map(ev => ochenta[ev.clave]), [26.67, 26.67, 26.66, 6.67, 6.67, 6.66, 0]);
+    assert.strictEqual(Object.values(ochenta).reduce((a, b) => a + b, 0), 100);
+    assert.strictEqual(d.evaluaciones.filter(ev => ev.tipo === 'quiz').reduce((s, ev) => s + ochenta[ev.clave], 0), 20);
+    assert.strictEqual(d.evaluaciones.filter(ev => ev.tipo === 'parcial').reduce((s, ev) => s + ochenta[ev.clave], 0), 80);
+    assert.strictEqual(ochenta.TALLER1, 0);
+
+    const setenta = Analisis.pesosSugeridos(d.evaluaciones, '70-30');
+    assert.strictEqual(d.evaluaciones.filter(ev => ev.tipo === 'quiz').reduce((s, ev) => s + setenta[ev.clave], 0), 30);
+    assert.strictEqual(d.evaluaciones.filter(ev => ev.tipo === 'parcial').reduce((s, ev) => s + setenta[ev.clave], 0), 70);
+    assert.strictEqual(setenta.TALLER1, 0);
+    assert.strictEqual(Object.values(setenta).reduce((a, b) => a + b, 0), 100);
+});
+
 test('Cálculo individual: acumulado, promedio, nota necesaria y estado', () => {
     const d = cargarMateUno();
     const g = Analisis.analizarGrupo(d);
@@ -127,14 +143,16 @@ test('Competencias a reforzar y recursos recomendados', () => {
     Estado.distribuirCompetencias('algebra_basica', d);
     assert.strictEqual(d.evaluaciones.find(e => e.clave === 'Q2').competencias[0], 'algebra_basica#11');
     const s = Recursos.sugerir(d, d.evaluaciones.find(e => e.clave === '2P'));
-    assert.strictEqual(s.web.length, 3);
+    assert.strictEqual(s.web.length, 6);
+    assert.ok(s.web[0].includes('UCES'));
     d.evaluaciones.find(e => e.clave === '2P').recursos.ejercicios = 'Baldor pág. 120, ejercicios 1 a 20';
     const g = Analisis.analizarGrupo(d);
     const r = g.resultados.find(x => x.perdidas.includes('2P'));
     const reforzar = Analisis.competenciasAReforzar(d, r);
     assert.ok(reforzar.some(x => x.competencia.id === 'algebra_basica#11'));
     const rec = Analisis.recursosRecomendados(d, r, reforzar);
-    assert.deepStrictEqual(rec.ejercicios, [{ titulo: 'Baldor pág. 120, ejercicios 1 a 20', url: null }]);
+    assert.deepStrictEqual(rec.ejercicios[0], { titulo: 'Baldor pág. 120, ejercicios 1 a 20', url: null });
+    assert.ok(rec.ejercicios.length > 1);
     assert.ok(g.competenciasCriticas.length > 0);
     assert.ok(Analisis.recomendaciones(d, r).length >= 1);
 });

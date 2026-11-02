@@ -9,6 +9,7 @@
     const CONFIG = global.CONFIG || require('./config.js');
     const U = global.Utilidades || require('./utilidades.js');
     const Analisis = global.Analisis || require('./analisis.js');
+    const RecursosCanal = global.RecursosCanal || require('./recursos-canal.js');
 
     /** "Resolver ecuaciones lineales con una incógnita." -> "ecuaciones lineales con una incógnita" */
     function temaDeCompetencia(texto) {
@@ -22,7 +23,12 @@
 
     function herramientasDelArea(texto) {
         const t = U.normalizarTexto(texto);
-        const area = CONFIG.HERRAMIENTAS_POR_AREA.find(a => a.patron.test(t));
+        const prioritaria = /program|algoritm|python|codigo|pandas|dataframe/.test(t)
+            ? /program|algoritm|python|codigo/
+            : /\bia\b|ias|inteligencia artificial|machine|aprendizaje/.test(t) ? /\bia\b|ias|inteligencia artificial|machine|aprendizaje/ : null;
+        const area = prioritaria
+            ? CONFIG.HERRAMIENTAS_POR_AREA.find(a => String(a.patron.source) === String(prioritaria.source))
+            : CONFIG.HERRAMIENTAS_POR_AREA.find(a => a.patron.test(t));
         return area ? area.herramientas : ['Khan Academy | https://es.khanacademy.org', 'GeoGebra | https://www.geogebra.org'];
     }
 
@@ -39,6 +45,11 @@
         const temas = comps.length ? comps.map(c => temaDeCompetencia(c.texto)) : [curso || evaluacion.nombre];
         const q = s => encodeURIComponent(s).replace(/%20/g, '+');
         const salida = { web: [], videos: [], ejercicios: [], herramientas: [] };
+        comps.forEach(comp => {
+            const personalizados = RecursosCanal.recursosPara(comp, curso);
+            salida.web.push(...personalizados.web.map(RecursosCanal.comoLinea));
+            salida.videos.push(...personalizados.videos.map(RecursosCanal.comoLinea));
+        });
         temas.forEach(tema => {
             CONFIG.BUSQUEDAS.web.slice(0, 1).forEach(b => salida.web.push(`${b.nombre}: ${tema} | ${b.url}${q(tema)}`));
             CONFIG.BUSQUEDAS.videos.forEach(b => salida.videos.push(`Video: ${tema} | ${b.url}${q(`${tema} explicación`)}`));

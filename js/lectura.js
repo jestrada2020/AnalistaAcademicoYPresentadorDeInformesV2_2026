@@ -192,6 +192,8 @@
             else nombre = String(f[colNombre] ?? '').trim();
             nombre = U.nombrePropio(nombre);
             let id = colId >= 0 ? String(f[colId] ?? '').trim() : '';
+            const documento = id;
+            const idGenerado = !id;
             if (!id) id = `EST-${String(i + 1).padStart(3, '0')}`;
             if (ids.has(id)) { avisos.push(`El documento ${id} está repetido (${nombre}); se le agregó un sufijo.`); id = `${id}-${i + 1}`; }
             ids.add(id);
@@ -226,7 +228,7 @@
                 const t = f[c.columna];
                 if (t !== '' && t !== null && t !== undefined && String(t).trim()) textos[c.clave] = String(t).trim();
             });
-            return { id, nombre, notas, marcas, info, extras: textos };
+            return { id, documento, idGenerado, nombre, notas, marcas, info, extras: textos };
         });
 
         evaluaciones.forEach(ev => {
@@ -319,9 +321,10 @@
             const norm = enc.map(h => U.normalizarTexto(h));
             let colComp = norm.findIndex(h => /competencia/.test(h));
             if (colComp < 0) colComp = 0;
-            let colCrit = norm.findIndex(h => /criterio|indicador|evidencia|desempeno/.test(h));
+            let colCrit = norm.findIndex(h => /criterio|indicador|evidencia|desempeno/.test(h) && !/pensamiento critico/.test(h));
             if (colCrit < 0 && iEnc < 0) colCrit = 1;
-            const otras = enc.map((h, i) => ({ h, i })).filter(c => c.h && c.i !== colComp && c.i !== colCrit)
+            const colPensamiento = norm.findIndex(h => /^pensamiento critico$/.test(h));
+            const otras = enc.map((h, i) => ({ h, i })).filter(c => c.h && ![colComp, colCrit, colPensamiento].includes(c.i))
                 .map(c => ({ ...c, rol: rolTexto(c.h) }));
 
             const competencias = [];
@@ -337,6 +340,7 @@
                 const numero = m ? +m[1] : competencias.length + 1;
                 const texto = (m ? m[2] : bruto).trim();
                 const criterio = colCrit >= 0 ? String(f?.[colCrit] ?? '').trim().replace(/^[-–•*]\s*/, '') : '';
+                const pensamientoCritico = colPensamiento >= 0 ? String(f?.[colPensamiento] ?? '').trim() : '';
                 const recursos = {};
                 const datos = {};
                 otras.forEach(c => {
@@ -345,7 +349,7 @@
                     if (CONFIG.TIPOS_RECURSO[c.rol]) (recursos[c.rol] ||= []).push(...U.lineas(v));
                     else datos[c.h] = v;
                 });
-                competencias.push({ numero, texto, criterio, recursos, datos, fila: iEnc + 2 + k });
+                competencias.push({ numero, texto, criterio, pensamientoCritico, recursos, datos, fila: iEnc + 2 + k });
             });
             if (!competencias.length) { avisos.push(`La hoja "${nombre}" no tiene competencias.`); return; }
 

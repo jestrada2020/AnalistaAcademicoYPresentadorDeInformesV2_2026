@@ -164,13 +164,17 @@
         const cuenta = {};
         curso.competencias.forEach(c => { const k = Analisis.dimensionDe(c); cuenta[k] = (cuenta[k] || 0) + 1; });
         $('dimResumen').innerHTML = Object.entries(CONFIG.DIMENSIONES).map(([k, d]) => `<span class="chip chip-dim" style="background:${d.fondo};color:${d.color}" title="${e(d.descripcion)}">${e(d.etiqueta)}: ${cuenta[k] || 0}</span>`).join('') +
-            `<span class="chip chip-otro">Corregidas a mano: ${curso.competencias.filter(c => c.dimensionManual).length}</span>`;
+            `<span class="chip chip-otro">Corregidas a mano: ${curso.competencias.filter(c => c.dimensionManual).length}</span>` +
+            `<details class="rubrica-pc"><summary class="cursor-pointer font-semibold">Rúbrica común de evidencia de pensamiento crítico (0–5)</summary>
+                <p class="mt-2">Estos intervalos orientan la valoración docente de la evidencia; no constituyen una nota automática de la competencia.</p>
+                <table><thead><tr><th>Intervalo</th><th>Nivel</th><th>Presencia de la evidencia</th></tr></thead><tbody>${PensamientoCritico.NIVELES.map(n => `<tr><td>${PensamientoCritico.rango(n)}</td><td>${e(n.etiqueta)}</td><td>${e(n.descripcion)}</td></tr>`).join('')}</tbody></table>
+            </details>`;
         const visibles = curso.competencias.filter(c => (!filtro || Analisis.dimensionDe(c) === filtro) && (!q || U.normalizarTexto(`${c.numero} ${c.texto} ${c.criterio}`).includes(q)));
         $('dimLista').innerHTML = visibles.map(c => {
             const auto = CONFIG.DIMENSIONES[c.dimension] || CONFIG.DIMENSIONES[Analisis.clasificarDimension(c.texto, c.criterio).dimension];
             return `<div class="comp-dim" data-comp="${e(c.id)}">
                 <b class="text-indigo-700">${c.numero}.</b>
-                <div>${e(c.texto)}${c.criterio ? `<div class="crit">Criterio: ${e(c.criterio)}</div>` : ''}${c.dimensionManual ? `<div class="manual">Corregida (automática: ${e(auto.etiqueta)})</div>` : ''}</div>
+                <div>${e(c.texto)}${c.criterio ? `<div class="crit">Criterio: ${e(c.criterio)}</div>` : ''}${c.pensamientoCritico ? `<div class="evidencia-pc">${e(c.pensamientoCritico)}</div>` : ''}${c.dimensionManual ? `<div class="manual">Corregida (automática: ${e(auto.etiqueta)})</div>` : ''}</div>
                 <select class="form-input" aria-label="Carácter de la competencia ${c.numero}" style="border-left:4px solid ${CONFIG.DIMENSIONES[Analisis.dimensionDe(c)].color}">
                     ${Object.entries(CONFIG.DIMENSIONES).map(([k, d]) => `<option value="${k}" ${Analisis.dimensionDe(c) === k ? 'selected' : ''}>${e(d.etiqueta)}${c.dimension === k ? ' (automático)' : ''}</option>`).join('')}
                 </select>

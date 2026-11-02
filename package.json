@@ -4,7 +4,9 @@
   "description": "Análisis de notas por competencias e informes individuales y grupales (funciona en el navegador, sin servidor)",
   "private": true,
   "scripts": {
-    "test": "node --test \"tests/**/*.test.js\""
+    "test": "node --test \"tests/**/*.test.js\"",
+    "catalogo:pensamiento-critico": "node generar_catalogo_pensamiento_critico.js",
+    "recursos:competencias": "node generar_recursos_competencias.js"
   },
   "devDependencies": {
     "xlsx": "0.18.5"

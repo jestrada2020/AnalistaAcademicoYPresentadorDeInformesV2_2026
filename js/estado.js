@@ -14,6 +14,8 @@
     const CONFIG = global.CONFIG || require('./config.js');
     const U = global.Utilidades || require('./utilidades.js');
     const Analisis = global.Analisis || require('./analisis.js');
+    const RecursosCanal = global.RecursosCanal || require('./recursos-canal.js');
+    const PensamientoCritico = global.PensamientoCritico || require('./pensamiento-critico.js');
 
     function grupoInicial() {
         return {
@@ -37,7 +39,8 @@
             seleccion: [],
             informe: {
                 tamano: 'letter', orientacion: 'p', incluirCompetencias: true, incluirRecursos: true,
-                incluirRecomendaciones: true, incluirDimensiones: true, incluirFirmas: true, incluirDatosArchivo: true, mensaje: ''
+                incluirRecomendaciones: true, incluirDimensiones: true, incluirFirmas: true, incluirDatosArchivo: true,
+                formatoEstudiante: 'nombre-documento', percepcionCritica: 'no', incluirPensamientoCritico: true, mensaje: ''
             }
         };
     }
@@ -109,6 +112,7 @@
 
     /** Hace que cada grupo vea el catálogo compartido (conservando el curso elegido en cada uno). */
     function vincularCatalogo(p = proyecto) {
+        if (p.catalogo) completarCatalogo(p.catalogo.cursos);
         p.grupos.forEach(g => {
             if (!p.catalogo) { g.competencias = null; return; }
             const previo = g.competencias?.cursoActivo;
@@ -328,6 +332,17 @@
         }));
     }
 
+    /** Completa evidencias y recursos ausentes en catálogos y respaldos antiguos sin reemplazar contenido editado. */
+    function completarCatalogo(cursos) {
+        (cursos || []).forEach(curso => (curso.competencias || []).forEach(comp => {
+            if (!comp.pensamientoCritico) comp.pensamientoCritico = PensamientoCritico.generarEvidencia(comp.texto, comp.criterio);
+            comp.recursos ||= {};
+            const sugeridos = RecursosCanal.recursosPara(comp, curso.nombre);
+            if (!(comp.recursos.web || []).length) comp.recursos.web = sugeridos.web.map(RecursosCanal.comoLinea);
+            if (!(comp.recursos.videos || []).length) comp.recursos.videos = sugeridos.videos.map(RecursosCanal.comoLinea);
+        }));
+    }
+
     /**
      * Incorpora un catálogo de competencias.
      * - Sin `d`: lo comparte con todos los grupos del proyecto (uso normal).
@@ -339,6 +354,7 @@
         const previos = new Map(anteriores.map(c => [c.id, c]));
         const cursos = resultado.cursos.map(c => ({ ...c, nombre: previos.get(c.id)?.nombre || c.nombre }));
         clasificarCursos(cursos, anteriores);
+        completarCatalogo(cursos);
         const validas = new Set(cursos.flatMap(c => c.competencias.map(x => x.id)));
         const limpiar = g => g.evaluaciones.forEach(ev => { ev.competencias = (ev.competencias || []).filter(id => validas.has(id)); });
         if (d) {

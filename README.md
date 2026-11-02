@@ -20,7 +20,7 @@ Cada competencia se clasifica por su carácter: **analítico**, **práctico** o 
    - Complete los datos del grupo activo. Institución, programa y periodo se aplican a todos los grupos.
    - El **grupo activo** se cambia en el selector de la cabecera; las pestañas 2 a 5 trabajan con él.
 2. **Evaluaciones y competencias**
-   - Revise el porcentaje de cada evaluación; por defecto los parciales suman 80 % y los quices 20 %.
+   - Revise el porcentaje de cada evaluación; por defecto los parciales suman 80 % y los quices 20 %. Al aplicar un preset, otras evaluaciones (talleres, seguimientos, proyectos) quedan con 0 % y una advertencia para asignarles peso manualmente si deben contar.
    - Asigne la fecha de cada evaluación.
    - Ajuste las competencias asociadas; al cargar el catálogo se reparten automáticamente.
    - Revise el **carácter** de cada evaluación. «Automático» lo toma de sus competencias; también puede fijarlo como analítico, práctico o crítico.
@@ -35,13 +35,19 @@ Cada competencia se clasifica por su carácter: **analítico**, **práctico** o 
    - Marque estudiantes para el informe.
    - Abra la ficha de cada uno para escribir observaciones.
 5. **Informes**
-   - PDF individual, uno por página, para los seleccionados, los del filtro o todo el grupo.
-   - PDF grupal y PDF del programa.
-   - Excel consolidado del grupo y Excel del programa.
+   - PDF individual para los seleccionados, los del filtro o todo el grupo.
+   - Selector de identificación: Apellidos y nombres, Apellidos y nombres + ID / C.C. o Solo ID / C.C.
+   - Percepción opcional del pensamiento crítico: general y muy breve o concreta con evidencias; no asigna la rúbrica automáticamente a partir de notas.
+   - «Competencias a reforzar» incluye pensamiento crítico, evaluación y tipo (parcial/quiz), con competencia y criterio justificados y menos anchos. La casilla «Columna de pensamiento crítico» controla su visibilidad. La redacción cambia según la nota: muy incipiente, limitada o insuficiente si no presentó, con acciones de mejora.
+   - «Recursos recomendados» tiene una casilla propia; si no hay recursos disponibles se muestra una explicación. Los respaldos antiguos completan evidencia y enlaces web/video faltantes sin reemplazar contenido editado.
+   - PDF unificado por persona: solo estudiantes comunes o todas las personas, con una sección independiente por matrícula.
+   - PDF con un informe grupal por cada grupo, PDF grupal del grupo activo y PDF del programa.
+   - Excel consolidado del grupo y Excel del programa con hojas de personas unificadas, estudiantes comunes y conflictos de identidad.
    - Impresión.
 6. **Programa (todos los grupos)**
-   - Indicadores globales y brecha entre grupos.
+   - Indicadores de matrículas, personas únicas, estudiantes comunes y brecha entre grupos.
    - Desempeño por carácter en todo el programa y en cada grupo.
+   - Avisos cuando un mismo documento aparece con nombres distintos; esas matrículas no se combinan.
    - Hallazgos y recomendaciones automáticas.
    - Comparativo de grupos y resumen por curso.
    - Competencias con menor y mayor logro, y evaluaciones con menor aprobación.
@@ -69,7 +75,7 @@ El trabajo se guarda solo en el navegador. Con **Guardar respaldo** se descarga 
 | Perfil de una evaluación | Proporción de sus competencias de cada carácter (p. ej. 1P = 67 % analítico y 33 % práctico), o el carácter fijado por el docente. Sin competencias se usa el tipo: talleres → práctico, proyectos → crítico. |
 | Nota por carácter | Promedio de las notas del estudiante, ponderado por el peso de cada evaluación y su proporción de ese carácter. |
 | Logro | Porcentaje de estudiantes con nota igual o mayor a la aprobatoria (por carácter o por competencia). |
-| Programa | Junta los estudiantes de todos los grupos: medias, logro, brecha (mejor grupo − más bajo), competencias y evaluaciones críticas. |
+| Programa | Junta las matrículas de todos los grupos y también cuenta personas únicas y comunes. La unificación exige documento y nombre normalizados; sin documento usa nombre exacto y advierte homónimos. Los conflictos permanecen separados. El promedio unificado es descriptivo, no una nota final combinada. |
 
 ## Formato de los archivos
 
@@ -87,9 +93,14 @@ El trabajo se guarda solo en el navegador. Con **Guardar respaldo** se descarga 
   Las recomendaciones se agregan al informe de ese estudiante.
 - **Avisos**: se informa de notas fuera de escala, documentos repetidos, valores que no son notas y estudiantes sin notas.
 
-**Catálogo de competencias.** Una hoja por curso con `Competencias` («1. Texto…») y `Criterios de Evaluación`.
+**Catálogo de competencias.** Una hoja por curso con `Competencias` («1. Texto…»), `Criterios de Evaluación` y `Pensamiento Critico`.
 
-- Las columnas opcionales `Páginas web`, `Videos`, `Ejercicios` y `Herramientas` se usan como recursos de cada competencia.
+- La tercera columna contiene una evidencia observable de pensamiento crítico derivada de la competencia y su criterio: observación de la realidad, reflexión, diálogo, escritura y conversación para comunicar lo aprendido en entornos sociales y académicos.
+- Una rúbrica común de 0 a 5 clasifica la presencia de esa evidencia: 0,00–0,99 No evidente; 1,00–1,99 Incipiente; 2,00–2,99 En desarrollo; 3,00–3,99 Logrado; 4,00–4,59 Alto; 4,60–5,00 Superior. La valoración la realiza el docente; no es una nota automática de la competencia.
+- La rúbrica aparece en un comentario del encabezado `Pensamiento Critico` y en la ventana **Revisar el carácter de las competencias**.
+- Las columnas `Páginas web`, `Videos`, `Ejercicios` y `Herramientas` contienen recursos asociados a cada competencia y criterio. Hay 269 videos directos del canal público **john estrada** y 171 búsquedas temáticas complementarias.
+- Fuentes web: sitios UCES Matemáticas Uno/Dos/Tres, documentación oficial de Python y Google Machine Learning, además de Khan Academy y búsquedas de ejercicios.
+- Para regenerar las asociaciones sin sobrescribir celdas editadas: `npm run recursos:competencias` (añada `-- --force` para reemplazar las celdas generadas).
 - Las filas sin número al final de la hoja se guardan como notas del curso.
 - Si Excel recortó el nombre de la hoja (31 caracteres), se puede corregir en la aplicación.
 
@@ -98,30 +109,34 @@ En **Datos → Descargar plantilla de notas** hay un modelo con instrucciones.
 ## Estructura
 
 ```
-index.html            Interfaz (5 pestañas)
+index.html            Interfaz (7 pestañas)
 css/style.css         Estilos (complementan Tailwind)
 js/config.js          Escala, niveles, estados, tipos, herramientas por área
 js/utilidades.js      Texto, números, estadística, notificaciones, modales
+js/personas.js        Identidad, estudiantes comunes, unificación y conflictos entre grupos
 js/lectura.js         Lectura y clasificación de columnas de los Excel
 js/analisis.js        Cálculos, estados, competencias, estadísticas y filtros
 js/estado.js          Proyecto con varios grupos y catálogo compartido, guardado, respaldo, distribución de competencias
 js/programa.js        Análisis global del programa, hallazgos y recomendaciones
 js/recursos.js        Sugerencia de enlaces de estudio por competencia
+js/pensamiento-critico.js Evidencias observables y rúbrica común 0–5
 js/informes.js        Modelos de informe → HTML, PDF (jsPDF + autoTable) y Excel
 js/datos-ejemplo.js   Datos de ejemplo
 js/ui-*.js, js/app.js Interfaz de cada pestaña (ui-programa.js: pestaña 6) y arranque
+generar_catalogo_pensamiento_critico.js Actualización reproducible del catálogo
 tests/                Pruebas automáticas (npm test)
 manual/               Manual del usuario: manual_usuario.tex (LaTeX), manual_usuario.pdf, capturas (img/)
                       y manual-indice.js (índice para la pestaña 7). Para regenerarlo: manual/construir_manual.sh
+manual/manual_tecnico.md Arquitectura, esquema de datos, rúbrica, generación y verificación
 ejemplos/             CSV de muestra con dos grupos (columna Grupo, punto y coma y coma decimal)
 docs/historial/       Documentación de versiones anteriores
 ```
 
-Para ejecutar las pruebas: `npm install` (solo la primera vez) y luego `npm test`.
+Para ejecutar las pruebas: `npm install` (solo la primera vez) y luego `npm test`. Para regenerar la tercera columna del catálogo y su rúbrica: `npm run catalogo:pensamiento-critico` (con `-- --check` para revisar sin escribir).
 
 ## Manual del usuario
 
-`manual/manual_usuario.pdf` (50 páginas) se genera desde LaTeX con `manual/construir_manual.sh`, que necesita `latexmk` y `python3`. Para moverse por él:
+`manual/manual_usuario.pdf` se genera desde LaTeX con `manual/construir_manual.sh`, que necesita `latexmk` y `python3`. La documentación para desarrollo y mantenimiento está en `manual/manual_tecnico.md`. Para moverse por el manual de usuario:
 
 - **Mapa rápido**: flujo de trabajo con pasos que son enlaces, botones a cada tema y una lista de tareas frecuentes.
 - **Índice**: con enlaces a cada capítulo y sección.

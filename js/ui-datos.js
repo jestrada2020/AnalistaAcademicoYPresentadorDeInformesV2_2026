@@ -181,13 +181,18 @@
         ]);
         notas['!cols'] = [{ wch: 14 }, { wch: 34 }, { wch: 18 }, { wch: 7 }, { wch: 20 }, ...Array(9).fill({ wch: 7 }), { wch: 30 }];
         XLSX.utils.book_append_sheet(libro, notas, 'Notas');
-        const comp = XLSX.utils.aoa_to_sheet([
-            ['Competencias', 'Criterios de Evaluación', 'Páginas web', 'Videos', 'Ejercicios', 'Herramientas'],
-            ['1. Comprender el concepto de ...', '- Interpretación correcta de ...', 'Título | https://...', '', 'Libro guía pág. 10, ej. 1-15', 'GeoGebra | https://www.geogebra.org'],
+        const ejemplosCompetencias = [
+            ['1. Comprender el concepto de ...', '- Interpretación correcta de ...'],
             ['2. Aplicar ... para resolver ...', '- Uso correcto de ...'],
             ['3. Justificar / evaluar / modelar ... en situaciones reales.', '- Argumentación y validación del resultado.']
+        ];
+        const comp = XLSX.utils.aoa_to_sheet([
+            ['Competencias', 'Criterios de Evaluación', 'Pensamiento Critico', 'Páginas web', 'Videos', 'Ejercicios', 'Herramientas'],
+            ...ejemplosCompetencias.map(([competencia, criterio], i) => [competencia, criterio, PensamientoCritico.generarEvidencia(competencia, criterio),
+                ...(i === 0 ? ['Título | https://...', '', 'Libro guía pág. 10, ej. 1-15', 'GeoGebra | https://www.geogebra.org'] : [])])
         ]);
-        comp['!cols'] = [{ wch: 60 }, { wch: 50 }, { wch: 30 }, { wch: 30 }, { wch: 30 }, { wch: 30 }];
+        comp.C1.c = [{ a: 'Analista Académico', t: PensamientoCritico.textoRubrica() }];
+        comp['!cols'] = [{ wch: 60 }, { wch: 50 }, { wch: 90 }, { wch: 30 }, { wch: 30 }, { wch: 30 }, { wch: 30 }];
         XLSX.utils.book_append_sheet(libro, comp, 'Competencias (ejemplo)');
         const ayuda = XLSX.utils.aoa_to_sheet([
             ['Cómo llenar la planilla'],
